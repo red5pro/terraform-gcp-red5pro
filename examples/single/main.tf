@@ -1,19 +1,19 @@
 #################################################
-# Example for single Red5 Pro server deployment #
+# Example for single Red5 Pro server deployment 
 #################################################
 
 module "red5pro_single" {
   source                    = "../../"
   google_region              = "us-west2"                                                    # Google region where resources will create eg: us-west2
 
-  create_new_google_project          = false                                                 # True - Create a new project in Gogle account, False - Use existing google project
+  create_new_google_project          = true                                                  # True - Create a new project in Gogle account, False - Use existing google project
   new_google_project_name            = ""                                                    # If create_new_google_project = true, Provide the new google project id
   existing_google_project_id         = ""                                                    # If create_new_google_project = false, provide the existing google projct id
 
   ubuntu_version            = "22.04"                                                        # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
   type                      = "single"                                                       # Deployment type: single, cluster, autoscaling
   name                      = "red5pro-single"                                               # Name to be used on all the resources as identifier
-  path_to_red5pro_build     = "./red5pro-server-0.0.0.b0-release.zip"                        # Absolute path or relative path to Red5 Pro server ZIP file
+  path_to_red5pro_build     = "./red5pro-server-0.0.b0-release.zip"                          # Absolute path or relative path to Red5 Pro server ZIP file
 
   # SSH key configuration
   create_new_ssh_keys              = true                                                    # true - create new SSH key, false - use existing SSH key
@@ -23,7 +23,7 @@ module "red5pro_single" {
 
   # VPC configuration
   vpc_create                       = true                                                    # True - Create a new VPC in Google Cloud, False - Use existing VPC
-  existing_vpc_network_name        = ""                                                      # VPC CIDR value for creating a new vpc in Gogle
+  existing_vpc_network_name        = ""                                                      # Existing VPC name used for the network configuration in Google Cloud
 
   # Single Red5 Pro server HTTPS/SSL certificate configuration
   https_letsencrypt_enable                   = false                                         # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
@@ -32,7 +32,8 @@ module "red5pro_single" {
   https_letsencrypt_certificate_password     = "examplepass"                                 # Password for Let's Encrypt SSL certificate
   
   # Single Red5 Pro server Instance configuration
-  single_server_instance_type                   = "n2-standard-2"                           # Instance type for Red5 Pro server
+  single_server_instance_type                   = "n2-standard-2"                            # Instance type for Red5 Pro server
+  single_server_boot_disk_type                  = "pd-ssd"                                   # Boot disk type for Single server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
 
   # Red5Pro server configuration
   red5pro_license_key                           = "1111-2222-3333-4444"                      # Red5 Pro license key (https://account.red5pro.com/login)

@@ -287,7 +287,7 @@ variable "mysql_username" {
   default         = ""
 }
 variable "mysql_instance_type" {
-  description     = "MySQL Instance typr"
+  description     = "MySQL Instance type"
   type            = string
   default         = ""
 }

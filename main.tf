@@ -13,7 +13,7 @@ locals {
   mysql_db_system_create               = local.autoscaling ? true : local.cluster && var.mysql_database_create ? true : false
   mysql_host                           = local.autoscaling ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : local.cluster && var.mysql_database_create ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : "localhost"
   stream_manager_ip                    = local.autoscaling ? google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip : local.cluster ? google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip : null
-  lb_ssl_certificate                   = local.autoscaling && var.create_new_lb_ssl_cert ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id
+  lb_ssl_certificate                   = local.autoscaling && var.create_new_lb_ssl_cert ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : local.cluster || local.single ? null : data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id
   lb_ip_address                        = local.autoscaling ? google_compute_global_address.lb_reserved_ip[0].address : null
 }
 
@@ -378,7 +378,7 @@ resource "google_compute_ssl_certificate" "new_lb_ssl_cert" {
 }
 # Existing SSL cerificate for Load Balancer
 data "google_compute_ssl_certificate" "existing_ssl_lb_cert" {
-  count               = local.autoscaling && var.create_new_lb_ssl_cert ? 0 : 1
+  count               = var.create_new_lb_ssl_cert ? 0 : 1
   name                = var.existing_ssl_certificate_name
   project             = local.google_cloud_project
 }
@@ -512,7 +512,7 @@ resource "google_compute_target_https_proxy" "lb_https_proxy" {
   name                = "${var.name}-https-proxy"
   project             = local.google_cloud_project
   url_map             = google_compute_url_map.lb_url_map[0].id
-  ssl_certificates    = [local.lb_ssl_certificate ]
+  ssl_certificates    = [local.lb_ssl_certificate]
 }
 
 # Load Balancer forwarding rule

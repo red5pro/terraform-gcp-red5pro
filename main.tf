@@ -13,6 +13,8 @@ locals {
   mysql_db_system_create               = local.autoscaling ? true : local.cluster && var.mysql_database_create ? true : false
   mysql_host                           = local.autoscaling ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : local.cluster && var.mysql_database_create ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : "localhost"
   stream_manager_ip                    = local.autoscaling ? google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip : local.cluster ? google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip : null
+  lb_ssl_certificate                   = local.autoscaling && var.create_new_lb_ssl_cert ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id
+  lb_ip_address                        = local.autoscaling ? google_compute_global_address.lb_reserved_ip[0].address : null
 }
 
 ################################################################################
@@ -229,7 +231,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   boot_disk {
     initialize_params {
       image = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
-      type = "pd-ssd"
+      type  = var.stream_manager_server_boot_disk_type
     }
   }
 
@@ -350,6 +352,181 @@ resource "google_sql_user" "default" {
   password            = var.mysql_password
   project             = local.google_cloud_project
 }
+################################################################################
+# Load Balancer Configuration
+################################################################################
+# Reserved IP address for Load Balancer
+resource "google_compute_global_address" "lb_reserved_ip" {
+  count               = local.autoscaling ? 1 : 0 
+  name                = "${var.name}-lb-reserver-ip"
+  ip_version          = "IPV4"
+  address_type        = "EXTERNAL"
+  network             = local.vpc_network_name
+  project             = local.google_cloud_project
+}
+
+# New SSL cerificate for Load Balancer
+resource "google_compute_ssl_certificate" "new_lb_ssl_cert" {
+  count               = local.autoscaling && var.create_new_lb_ssl_cert ? 1 : 0
+  name_prefix         = "${var.name}-lb-cert"
+  private_key         = file(var.new_ssl_private_key_path)
+  certificate         = file(var.new_ssl_certificate_key_path)
+  project             = local.google_cloud_project
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+# Existing SSL cerificate for Load Balancer
+data "google_compute_ssl_certificate" "existing_ssl_lb_cert" {
+  count               = local.autoscaling && var.create_new_lb_ssl_cert ? 0 : 1
+  name                = var.existing_ssl_certificate_name
+  project             = local.google_cloud_project
+}
+
+resource "google_compute_instance_template" "stream_manager_template" {
+  count               = local.autoscaling ? 1 : 0
+  name                = "${var.name}-stream-manager"
+  machine_type        = var.stream_manager_server_instance_type
+  tags                = ["${var.name}-sm-template"]
+  project             = local.google_cloud_project
+  metadata = {
+    ssh-keys          = "ubuntu:${local.public_ssh_key}"
+  }
+    
+  disk {
+    auto_delete       = true
+    source_image      = google_compute_image.red5_sm_image[0].self_link
+    disk_type         = var.stream_manager_server_boot_disk_type
+  }
+
+  network_interface {
+    network = local.vpc_network_name
+    access_config {
+    }
+  }
+
+  service_account {
+    scopes = ["cloud-platform"]
+  }
+
+  depends_on = [google_compute_image.red5_sm_image]
+}
+
+# Health check for stream Manager
+resource "google_compute_health_check" "sm_health_check" {
+  count               = local.autoscaling ? 1 : 0
+  name                = "${var.name}-sm-health-check"
+  project             = local.google_cloud_project
+  timeout_sec         = 5
+  check_interval_sec  = 10
+  healthy_threshold   = 5
+  unhealthy_threshold = 5
+
+  http_health_check {
+    port              = 5080
+  }
+}
+
+# Autoscaling Instance Group Manager
+resource "google_compute_instance_group_manager" "stream_manager_instance_group" {
+  count               = local.autoscaling ? 1 : 0
+  name                = "${var.name}-sm-instance-group-manager"
+  zone                = element(data.google_compute_zones.available_zone.names, count.index)
+  project             = local.google_cloud_project
+
+  named_port {
+    name = "red5pro-http-port"
+    port = 5080
+  }
+  version {
+    instance_template = google_compute_instance_template.stream_manager_template[0].self_link_unique
+    name              = "${var.name}-sm-version"
+  }
+  base_instance_name  = "${var.name}-stream-manager"
+  target_size         = var.count_of_stream_managers
+
+  auto_healing_policies {
+    health_check      = google_compute_health_check.sm_health_check[0].id
+    initial_delay_sec = 300
+  }
+
+  lifecycle {
+    ignore_changes    = [ target_size ]
+  }
+  instance_lifecycle_policy {
+    force_update_on_repair = "NO"
+  }
+}
+
+# Backend service for 
+resource "google_compute_backend_service" "sm_backend_service" {
+  count                   = local.autoscaling ? 1 : 0
+  name                    = "${var.name}-backend-service"
+  project                 = local.google_cloud_project
+  protocol                = "HTTP"
+  port_name               = "${var.name}-sm-http-port"
+  load_balancing_scheme   = "EXTERNAL"
+  timeout_sec             = 60
+  enable_cdn              = false
+  health_checks           = [google_compute_health_check.sm_health_check[0].id]
+  backend {
+    group                 = google_compute_instance_group_manager.stream_manager_instance_group[0].instance_group
+    balancing_mode        = "UTILIZATION"
+    capacity_scaler       = 1.0
+  }
+}
+
+# Load Balancer URL map
+resource "google_compute_url_map" "lb_url_map" {
+  count               = local.autoscaling ? 1 : 0
+  name                = "${var.name}-load-balancer-map"
+  project             = local.google_cloud_project
+  default_service     = google_compute_backend_service.sm_backend_service[0].id
+}
+
+# Load Balancer HTTP proxy
+resource "google_compute_target_http_proxy" "lb_http_proxy" {
+  count               = local.autoscaling ? 1 : 0
+  name                = "${var.name}-http-proxy"
+  project             = local.google_cloud_project
+  url_map             = google_compute_url_map.lb_url_map[0].id
+}
+
+# Load Balancer HTTP forwarding rule
+resource "google_compute_global_forwarding_rule" "lb_http_forward_rule" {
+  count                 = local.autoscaling ? 1 : 0
+  name                  = "${var.name}-forwarding-rule-http"
+  project               = local.google_cloud_project
+  ip_protocol           = "TCP"
+  ip_version            = "IPV4"
+  load_balancing_scheme = "EXTERNAL"
+  port_range            = "5080"
+  network               = local.vpc_network_name
+  target                = google_compute_target_http_proxy.lb_http_proxy[0].id
+  ip_address            = google_compute_global_address.lb_reserved_ip[0].id
+}
+
+# Load Balancer HTTPS proxy
+resource "google_compute_target_https_proxy" "lb_https_proxy" {
+  count               = local.autoscaling ? 1 : 0
+  name                = "${var.name}-https-proxy"
+  project             = local.google_cloud_project
+  url_map             = google_compute_url_map.lb_url_map[0].id
+  ssl_certificates    = [local.lb_ssl_certificate ]
+}
+
+# Load Balancer forwarding rule
+resource "google_compute_global_forwarding_rule" "lb_https_forward_rule" {
+  count                 = local.autoscaling ? 1 : 0
+  name                  = "${var.name}-forwarding-rule-https"
+  project               = local.google_cloud_project
+  ip_protocol           = "TCP"
+  load_balancing_scheme = "EXTERNAL"
+  port_range            = "443"
+  target                = google_compute_target_https_proxy.lb_https_proxy[0].id
+  ip_address            = google_compute_global_address.lb_reserved_ip[0].id
+}
+
 
 ################################################################################
 # Red5 Node Server Configuration
@@ -704,6 +881,16 @@ resource "google_compute_instance" "red5_relay_server" {
 #################################################################################################
 # Stop droplet which used for creating nodes(Origin, Edge, Transcoder, Relay) images (Gcloud CLI)
 #################################################################################################
+# Stop Stream Manager virtual machine Gcloud CLI
+resource "null_resource" "delete_stream_manager" {
+  count        = local.autoscaling ? 1 : 0
+  provisioner "local-exec" {
+    command    = "gcloud compute instances delete ${google_compute_instance.red5_stream_manager_server[0].name} --zone=${google_compute_instance.red5_stream_manager_server[0].zone} --keep-disks=all --quiet"
+  }
+  depends_on   = [google_compute_instance.red5_stream_manager_server[0]]
+}
+
+
 # Stop Origin node virtual machine Gcloud CLI
 resource "null_resource" "delete_origin_node" {
   count        = var.origin_image_create ? 1 : 0
@@ -743,6 +930,19 @@ resource "null_resource" "delete_relay_node" {
 ####################################################################################################
 # Red5 Pro Autoscaling Nodes create images - Origin/Edge/Transcoders/Relay
 ####################################################################################################
+# Stream Manager Image
+resource "google_compute_image" "red5_sm_image" {
+  count        = local.autoscaling ? 1 : 0
+  name         = "${var.name}-sm-image-${formatdate("DDMMYY-hhmm", timestamp())}"
+  project      = local.google_cloud_project
+  source_disk  = google_compute_instance.red5_stream_manager_server[0].boot_disk.0.source
+  depends_on   = [null_resource.delete_stream_manager[0]]
+
+  lifecycle {
+    ignore_changes = [name]
+  }
+}
+
 # Origin Node - Origin Image
 resource "google_compute_image" "red5_origin_image" {
   count        = var.origin_image_create ? 1 : 0

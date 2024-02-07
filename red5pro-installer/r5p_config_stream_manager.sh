@@ -108,7 +108,6 @@ config_sm_properties_main(){
         log_w "Variable SM_API_KEY is empty."
         var_error=1
     fi
-
     if [[ "$var_error" == "1" ]]; then
         log_e "One or more variables are empty. EXIT!"
 

@@ -86,3 +86,8 @@ output "stream_manager_https_url" {
   description = "Stream Manager HTTPS URL"
   value       = local.cluster && var.https_letsencrypt_enable ? "https://${var.https_letsencrypt_certificate_domain_name}:443" : null
 }
+
+output "load_balancer_url" {
+  description = "Load Balancer HTTPS URL"
+  value       = local.autoscaling ? "https://${local.lb_ip_address}:443" : null
+}

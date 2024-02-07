@@ -328,6 +328,12 @@ variable "stream_manager_api_key" {
   default     = ""
 }
 
+variable "stream_manager_server_boot_disk_type" {
+  description = "Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`"
+  type        = string
+  default     = ""
+}
+
 variable "red5pro_cluster_key" {
   description = "Red5Pro Cluster Key"
   type        = string
@@ -335,9 +341,40 @@ variable "red5pro_cluster_key" {
 }
 
 variable "path_to_google_cloud_controller" {
-  description     = "Path to the google cloud controller file, absolute path or relative path. https://account.red5pro.com/downloads. Example: /home/ubuntu/google-cloud-controller-0.0.0.jar"
-  type            = string
-  default         = ""
+  description = "Path to the google cloud controller file, absolute path or relative path. https://account.red5pro.com/downloads. Example: /home/ubuntu/google-cloud-controller-0.0.0.jar"
+  type        = string
+  default     = ""
+}
+
+# Load Balancer configuration
+variable "count_of_stream_managers" {
+  description = "Amount of Stream Managers to deploy in autoscale setup"
+  type        = number
+  default     = 1
+}
+
+variable "create_new_lb_ssl_cert" {
+  description = "True - Create a new SSL certificate for the Load Balancer, False - Use existing SSL certificate for Load Balancer "
+  type        = bool
+  default     = true
+}
+
+variable "new_ssl_private_key_path" {
+  description = "Path to the new SSL certificate private key file"
+  type        = string
+  default     = ""
+}
+
+variable "new_ssl_certificate_key_path" {
+  description = "Path to the new SSL certificate key file"
+  type        = string
+  default     = ""
+}
+
+variable "existing_ssl_certificate_name" {
+  description = "Existing SSL certificate name which is already created in the Google Cloud. If creating a new project in GCP, kindly create a new SSL certificate"
+  type        = string
+  default     = ""
 }
 
 # Red5 Pro Node Configuration

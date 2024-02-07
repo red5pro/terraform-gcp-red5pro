@@ -1,7 +1,7 @@
 #################################################
-# Example for Cluster Red5 Pro server deployment
+# Example for Autoscaling Red5 Pro server deployment
 #################################################
-module "red5pro_cluster" {
+module "red5pro_autoscaling" {
   source                     = "../../"
   google_region              = "asia-south1"                                               # Google region where resources will create eg: us-west2
 
@@ -10,8 +10,8 @@ module "red5pro_cluster" {
   existing_google_project_id         = ""                                                  # If create_new_google_project = false, provide the existing google projct id
 
   ubuntu_version            = "22.04"                                                      # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
-  type                      = "cluster"                                                    # Deployment type: single, cluster, autoscaling
-  name                      = "red5pro-cluster"                                            # Name to be used on all the resources as identifier
+  type                      = "autoscaling"                                                # Deployment type: single, cluster, autoscaling
+  name                      = "red5pro-autoscaling"                                        # Name to be used on all the resources as identifier
   path_to_red5pro_build     = "./red5pro-server-0.0.0.b0-release.zip"                      # Absolute path or relative path to Red5 Pro server ZIP file
   path_to_google_cloud_controller = "./google-cloud-controller-0.0.0.jar"                  # Absolute path or relative path to google cloud controller jar file
  
@@ -26,7 +26,6 @@ module "red5pro_cluster" {
   existing_vpc_network_name        = ""                                                    # if `vpc_create` = false, Existing VPC name used for the network configuration
 
   # Database Configuration
-  mysql_database_create     = false                                                        # true - create a new database false- Install locally
   mysql_instance_type       = ""                                                           # New database instance type
   mysql_username            = "example-user"                                               # Username for locally install databse and dedicated database in google
   mysql_password            = ""                                                           # Password for locally install databse and dedicated database in google
@@ -37,17 +36,18 @@ module "red5pro_cluster" {
   red5pro_cluster_key                           = ""                                       # Red5 Pro cluster key
   red5pro_api_enable                            = true                                     # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5.net/docs/development/api/overview/)
   red5pro_api_key                               = ""                                       # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
-
-  # Red5 Pro server HTTPS/SSL certificate configuration
-  https_letsencrypt_enable                   = false                                       # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
-  https_letsencrypt_certificate_domain_name  = "red5pro.example.com"                       # Domain name for Let's Encrypt SSL certificate
-  https_letsencrypt_certificate_email        = "email@example.com"                         # Email for Let's Encrypt SSL certificate
-  https_letsencrypt_certificate_password     = "examplepass"                               # Password for Let's Encrypt SSL certificate
   
-  # Red5 Pro server Instance configuration
+  # Red5 Pro Server Instance configuration
   stream_manager_server_instance_type           = "n2-standard-2"                          # Instance type for Red5 Pro stream manager server
   stream_manager_api_key                        = ""                                       # Stream Manager api key
   stream_manager_server_boot_disk_type          = "pd-ssd"                                 # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+
+# Load Balancer Configuration
+  count_of_stream_managers                                 = 1                             # Amount of Stream Managers to deploy in autoscale setup
+  create_new_lb_ssl_cert                                   = true                          # True - Create a new SSL certificate for the Load Balancer, False - Use existing SSL certificate for Load Balancer
+  new_ssl_private_key_path                                 = ""                            # if `create_new_lb_ssl_cert` = true, Path to the new SSL certificate private key file
+  new_ssl_certificate_key_path                             = ""                            # if `create_new_lb_ssl_cert` = true, Path to the new SSL certificate key file
+  existing_ssl_certificate_name                            = ""                            # if `create_new_lb_ssl_cert` = false, Existing SSL certificate name which is already created in the Google Cloud. If creating a new project in GCP, kindly create a new SSL certificate
 
   # Red5 Pro cluster Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
@@ -94,5 +94,5 @@ module "red5pro_cluster" {
 
 output "module_output" {
   sensitive = true
-  value = module.red5pro_cluster
+  value = module.red5pro_autoscaling
 }

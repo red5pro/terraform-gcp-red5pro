@@ -185,9 +185,12 @@ module "red5pro_cluster" {
   https_letsencrypt_certificate_password     = "examplepass"                               # Password for Let's Encrypt SSL certificate
   
   # Red5 Pro server Instance configuration
+  create_new_reserved_ip_for_stream_manager     = true                                     # True - Create a new reserved IP for stream manager, False - Use already created reserved IP address
+  existing_sm_reserved_ip_name                  = ""                                       # If `create_new_reserved_ip_for_stream_manager` = false then specify the name of already create reserved IP for stream manager
   stream_manager_server_instance_type           = "n2-standard-2"                          # Instance type for Red5 Pro stream manager server
   stream_manager_api_key                        = ""                                       # Stream Manager api key
- 
+  stream_manager_server_boot_disk_type          = "pd-ssd"                                 # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+
   # Red5 Pro cluster Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
   origin_server_instance_type                              = "n2-standard-2"               # Instance type for the Red5 Pro Origin server

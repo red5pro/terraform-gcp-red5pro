@@ -184,7 +184,7 @@ check_node_group(){
     sleep 30
     NODES_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node?accessToken=$SM_API_KEY"
     
-    for i in {1..10};
+    for i in {1..15};
     do
         resp=$(curl -s "$NODES_URL")
         echo "$resp" |jq -r '.[] | [.identifier, .role, .state] | join(" ")' > temp.txt
@@ -211,8 +211,8 @@ check_node_group(){
             fi
             break
         fi
-        if [[ $i -eq 10 ]]; then
-            log_e "Something wrong with nodes states. (Terraform service can't deploy nodes or nodes can't connect to SM). EXIT..."
+        if [[ $i -eq 15 ]]; then
+            log_e "Something wrong with nodes states. (Google Cloud service can't deploy nodes or nodes can't connect to SM). EXIT..."
         fi
         sleep 30
     done

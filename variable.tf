@@ -346,6 +346,18 @@ variable "path_to_google_cloud_controller" {
   default     = ""
 }
 
+variable "existing_sm_reserved_ip_name" {
+  description = "Already created Reserved IP address for stream manager"
+  type        = string
+  default     = ""
+}
+
+variable "create_new_reserved_ip_for_stream_manager" {
+  description = "Create a new reserved IP for stream manager"
+  type        = bool
+  default     = true
+}
+
 # Load Balancer configuration
 variable "count_of_stream_managers" {
   description = "Amount of Stream Managers to deploy in autoscale setup"

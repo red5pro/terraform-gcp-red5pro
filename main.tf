@@ -15,6 +15,7 @@ locals {
   stream_manager_ip                    = local.autoscaling ? google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip : local.cluster ? google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip : null
   lb_ssl_certificate                   = local.autoscaling && var.create_new_lb_ssl_cert ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : local.cluster || local.single ? null : data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id
   lb_ip_address                        = local.autoscaling ? google_compute_global_address.lb_reserved_ip[0].address : null
+  sm_reserved_ip                       = local.cluster_or_autoscaling && var.create_new_reserved_ip_for_stream_manager ? google_compute_global_address.sm_reserved_ip[0].address : data.google_compute_global_address.existing_sm_reserved_ip[0].address
 }
 
 ################################################################################
@@ -220,6 +221,23 @@ resource "google_compute_firewall" "red5_stream_manager_firewall" {
   project       = local.google_cloud_project
 }
 
+# Reserved IP address for Stream Manager
+resource "google_compute_global_address" "sm_reserved_ip" {
+  count               = local.cluster_or_autoscaling && var.create_new_reserved_ip_for_stream_manager ? 1 : 0 
+  name                = "${var.name}-sm-reserver-ip"
+  ip_version          = "IPV4"
+  address_type        = "EXTERNAL"
+  network             = local.vpc_network_name
+  project             = local.google_cloud_project
+}
+
+# Already created reserved IP for Stream Manager
+data "google_compute_global_address" "existing_sm_reserved_ip" {
+  count               = local.cluster_or_autoscaling && var.create_new_reserved_ip_for_stream_manager ? 0 : 1 
+  name                = var.existing_sm_reserved_ip_name 
+  project             = local.google_cloud_project
+}
+
 # Red5 Pro Stream Manager Instance
 resource "google_compute_instance" "red5_stream_manager_server" {
   count        = local.cluster_or_autoscaling ? 1 : 0
@@ -238,6 +256,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   network_interface {
     network = local.vpc_network_name
     access_config {
+      nat_ip = local.sm_reserved_ip
     }
   }
 
@@ -304,6 +323,9 @@ resource "google_compute_instance" "red5_stream_manager_server" {
       private_key = "${local.private_ssh_key}"
     }
   }
+  service_account {
+    scopes = [ "cloud-platform" ]
+  }
 }
 
 ################################################################################
@@ -330,7 +352,6 @@ resource "google_sql_database_instance" "mysql_database" {
 
     ip_configuration {
       ipv4_enabled    = true
-      private_network = local.vpc_network_name
       require_ssl     = false
 
       authorized_networks {
@@ -345,7 +366,7 @@ resource "google_sql_database_instance" "mysql_database" {
 }
 
 # Creating MySQL Database user
-resource "google_sql_user" "default" {
+resource "google_sql_user" "database_new_user" {
   count               = local.mysql_db_system_create ? 1 : 0
   name                = var.mysql_username
   instance            = google_sql_database_instance.mysql_database[0].name
@@ -376,6 +397,7 @@ resource "google_compute_ssl_certificate" "new_lb_ssl_cert" {
     create_before_destroy = true
   }
 }
+
 # Existing SSL cerificate for Load Balancer
 data "google_compute_ssl_certificate" "existing_ssl_lb_cert" {
   count               = var.create_new_lb_ssl_cert ? 0 : 1
@@ -1004,6 +1026,15 @@ resource "time_sleep" "wait_for_delete_nodegroup" {
     google_compute_firewall.red5_stream_manager_firewall[0],
     google_compute_instance.red5_stream_manager_server[0],
     google_compute_network.vpc_red5_network[0],
+    google_compute_instance_template.stream_manager_template[0],
+    google_compute_health_check.sm_health_check[0],
+    google_compute_instance_group_manager.stream_manager_instance_group[0],
+    google_compute_backend_service.sm_backend_service[0],
+    google_compute_url_map.lb_url_map[0],
+    google_compute_target_http_proxy.lb_http_proxy[0],
+    google_compute_global_forwarding_rule.lb_http_forward_rule[0],
+    google_compute_global_forwarding_rule.lb_https_forward_rule[0],
+    google_compute_target_https_proxy.lb_https_proxy[0]
   ]
   
   destroy_duration = "2m"

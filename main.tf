@@ -233,7 +233,7 @@ resource "google_compute_address" "sm_reserved_ip" {
 
 # Already created reserved IP for Stream Manager
 data "google_compute_address" "existing_sm_reserved_ip" {
-  count               = local.autoscaling ? 0 : local.create_sm_reserved_ip ? 0 : 1 
+  count               = local.single ? 0 : local.autoscaling ? 0 : local.create_sm_reserved_ip ? 0 : 1 
   name                = var.existing_sm_reserved_ip_name 
   project             = local.google_cloud_project
   region              = var.google_region

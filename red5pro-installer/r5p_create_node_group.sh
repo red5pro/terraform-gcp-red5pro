@@ -110,7 +110,7 @@ check_stream_manager(){
         if [ "$i" -eq 20 ]; then
             log_e "EXIT..."
         fi
-        sleep 5
+        sleep 20
     done
 }
 
@@ -167,7 +167,7 @@ add_origin_to_node_group(){
     log_i "Starting a new Origin ..."
 
     CREATE_ORIGIN_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node/origin?accessToken=$SM_API_KEY"
-    resp=$(curl -s --location --request POST $CREATE_ORIGIN_URL)
+    resp=$(curl -s --location --request POST $CREATE_ORIGIN_URL --header 'Content-Type: application/json' --header 'Content-Length: 0' )
     origin_resp=$(echo "$resp" | jq -r '.group')
 
     if [[ "$origin_resp" == "$NODE_GROUP_NAME" ]]; then

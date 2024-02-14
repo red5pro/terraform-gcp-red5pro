@@ -34,8 +34,8 @@ log() {
     echo -n "[$(date '+%Y-%m-%d %H:%M:%S')]"
 }
 
-config_sm_properties_azure(){
-    log_i "Start configuration Stream Manager properties for Microsoft Azure"
+config_sm_properties_gcp(){
+    log_i "Start configuration Stream Manager properties for Google Cloud"
     
     if [ -z "$GOGOLE_PROJECT_ID" ]; then
         log_w "Variable GOGOLE_PROJECT_ID is empty."
@@ -265,6 +265,6 @@ config_sm_applicationContext
 config_sm_cors
 config_whip_whep
 config_sm_properties_main
-config_sm_properties_azure
+config_sm_properties_gcp
 config_mysql
 

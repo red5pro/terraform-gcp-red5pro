@@ -12,10 +12,11 @@ locals {
   mysql_local_enable                   = local.autoscaling ? false : local.cluster && var.mysql_database_create ? false : true
   mysql_db_system_create               = local.autoscaling ? true : local.cluster && var.mysql_database_create ? true : false
   mysql_host                           = local.autoscaling ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : local.cluster && var.mysql_database_create ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : "localhost"
-  stream_manager_ip                    = local.autoscaling ? google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip : local.cluster ? google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip : null
+  stream_manager_ip                    = local.autoscaling ? google_compute_global_address.lb_reserved_ip[0].address : local.cluster ? google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip : null
   lb_ssl_certificate                   = local.autoscaling && var.create_new_lb_ssl_cert ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : local.cluster || local.single ? null : data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id
   lb_ip_address                        = local.autoscaling ? google_compute_global_address.lb_reserved_ip[0].address : null
-  sm_reserved_ip                       = local.cluster_or_autoscaling && var.create_new_reserved_ip_for_stream_manager ? google_compute_global_address.sm_reserved_ip[0].address : data.google_compute_global_address.existing_sm_reserved_ip[0].address
+  create_sm_reserved_ip                = local.cluster && var.create_new_reserved_ip_for_stream_manager ? true : false
+  sm_nat_ip                            = local.create_sm_reserved_ip ? google_compute_address.sm_reserved_ip[0].address : local.cluster ? data.google_compute_address.existing_sm_reserved_ip[0].address : null
 }
 
 ################################################################################
@@ -222,20 +223,26 @@ resource "google_compute_firewall" "red5_stream_manager_firewall" {
 }
 
 # Reserved IP address for Stream Manager
-resource "google_compute_global_address" "sm_reserved_ip" {
-  count               = local.cluster_or_autoscaling && var.create_new_reserved_ip_for_stream_manager ? 1 : 0 
+resource "google_compute_address" "sm_reserved_ip" {
+  count               = local.autoscaling ? 0 : local.create_sm_reserved_ip ? 1 : 0
   name                = "${var.name}-sm-reserver-ip"
-  ip_version          = "IPV4"
   address_type        = "EXTERNAL"
-  network             = local.vpc_network_name
   project             = local.google_cloud_project
+  region              = var.google_region
 }
 
 # Already created reserved IP for Stream Manager
-data "google_compute_global_address" "existing_sm_reserved_ip" {
-  count               = local.cluster_or_autoscaling && var.create_new_reserved_ip_for_stream_manager ? 0 : 1 
+data "google_compute_address" "existing_sm_reserved_ip" {
+  count               = local.autoscaling ? 0 : local.create_sm_reserved_ip ? 0 : 1 
   name                = var.existing_sm_reserved_ip_name 
   project             = local.google_cloud_project
+  region              = var.google_region
+  lifecycle {
+    postcondition {
+      condition       = self.address != null
+      error_message   = "The existing IP address with name: ${var.existing_sm_reserved_ip_name} does not exist in region ${var.google_region}." 
+    }
+  }
 }
 
 # Red5 Pro Stream Manager Instance
@@ -245,6 +252,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   machine_type = var.stream_manager_server_instance_type
   zone         = element(data.google_compute_zones.available_zone.names, count.index)
   project      = local.google_cloud_project
+  allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {
@@ -256,7 +264,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   network_interface {
     network = local.vpc_network_name
     access_config {
-      nat_ip = local.sm_reserved_ip
+      nat_ip = local.autoscaling ? null : local.sm_nat_ip
     }
   }
 
@@ -326,6 +334,9 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   service_account {
     scopes = [ "cloud-platform" ]
   }
+  lifecycle {
+    ignore_changes = all
+  }
 }
 
 ################################################################################
@@ -382,7 +393,6 @@ resource "google_compute_global_address" "lb_reserved_ip" {
   name                = "${var.name}-lb-reserver-ip"
   ip_version          = "IPV4"
   address_type        = "EXTERNAL"
-  network             = local.vpc_network_name
   project             = local.google_cloud_project
 }
 
@@ -432,6 +442,9 @@ resource "google_compute_instance_template" "stream_manager_template" {
   }
 
   depends_on = [google_compute_image.red5_sm_image]
+  lifecycle {
+    ignore_changes = [ disk ]
+  }
 }
 
 # Health check for stream Manager
@@ -457,7 +470,7 @@ resource "google_compute_instance_group_manager" "stream_manager_instance_group"
   project             = local.google_cloud_project
 
   named_port {
-    name = "red5pro-http-port"
+    name = "${var.name}-sm-http-port"
     port = 5080
   }
   version {
@@ -520,10 +533,8 @@ resource "google_compute_global_forwarding_rule" "lb_http_forward_rule" {
   name                  = "${var.name}-forwarding-rule-http"
   project               = local.google_cloud_project
   ip_protocol           = "TCP"
-  ip_version            = "IPV4"
   load_balancing_scheme = "EXTERNAL"
   port_range            = "5080"
-  network               = local.vpc_network_name
   target                = google_compute_target_http_proxy.lb_http_proxy[0].id
   ip_address            = google_compute_global_address.lb_reserved_ip[0].id
 }
@@ -656,6 +667,9 @@ resource "google_compute_instance" "red5_origin_server" {
       private_key = "${local.private_ssh_key}"
     }
   }
+  lifecycle {
+    ignore_changes = all
+  }
 }
 
 # Red5 Pro Edge server instance
@@ -734,6 +748,9 @@ resource "google_compute_instance" "red5_edge_server" {
       user        = "ubuntu"
       private_key = "${local.private_ssh_key}"
     }
+  }
+  lifecycle {
+    ignore_changes = all
   }
 }
 
@@ -819,6 +836,9 @@ resource "google_compute_instance" "red5_transcoder_server" {
       private_key = "${local.private_ssh_key}"
     }
   }
+  lifecycle {
+    ignore_changes = all
+  }
 }
 
 # Red5 Pro Relay server instance
@@ -898,6 +918,9 @@ resource "google_compute_instance" "red5_relay_server" {
       private_key = "${local.private_ssh_key}"
     }
   }
+  lifecycle {
+    ignore_changes = all
+  }
 }
 
 #################################################################################################
@@ -961,7 +984,7 @@ resource "google_compute_image" "red5_sm_image" {
   depends_on   = [null_resource.delete_stream_manager[0]]
 
   lifecycle {
-    ignore_changes = [name]
+    ignore_changes = [name, source_disk]
   }
 }
 
@@ -974,7 +997,7 @@ resource "google_compute_image" "red5_origin_image" {
   depends_on   = [null_resource.delete_origin_node[0]]
 
   lifecycle {
-    ignore_changes = [name]
+    ignore_changes = [name, source_disk]
   }
 }
 
@@ -987,7 +1010,7 @@ resource "google_compute_image" "red5_edge_image" {
   depends_on   = [null_resource.delete_edge_node[0]]
 
   lifecycle {
-    ignore_changes = [name]
+    ignore_changes = [name, source_disk]
   }
 }
 
@@ -1000,7 +1023,7 @@ resource "google_compute_image" "red5_transcoder_image" {
   depends_on   = [null_resource.delete_transcoder_node[0]]
 
   lifecycle {
-    ignore_changes = [name]
+    ignore_changes = [name, source_disk]
   }
 }
 

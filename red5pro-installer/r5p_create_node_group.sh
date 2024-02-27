@@ -110,7 +110,7 @@ check_stream_manager(){
         if [ "$i" -eq 20 ]; then
             log_e "EXIT..."
         fi
-        sleep 20
+        sleep 30
     done
 }
 

@@ -1,14 +1,14 @@
 #################################################
 # Example for single Red5 Pro server deployment 
 #################################################
+provider "google" {
+  project                   = ""                                                             # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
+}
 
 module "red5pro_single" {
   source                    = "../../"
-  google_region              = "us-west2"                                                    # Google region where resources will create eg: us-west2
-
-  create_new_google_project          = true                                                  # True - Create a new project in Gogle account, False - Use existing google project
-  new_google_project_name            = ""                                                    # If create_new_google_project = true, Provide the new google project id
-  existing_google_project_id         = ""                                                    # If create_new_google_project = false, provide the existing google projct id
+  google_region             = "us-west2"                                                     # Google region where resources will create eg: us-west2
+  google_project_id         = ""                                                             # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
   ubuntu_version            = "22.04"                                                        # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
   type                      = "single"                                                       # Deployment type: single, cluster, autoscaling

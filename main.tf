@@ -2,7 +2,7 @@ locals {
   single                               = var.type == "single" ? true : false
   cluster                              = var.type == "cluster" ? true : false
   autoscaling                          = var.type == "autoscaling" ? true : false
-  google_cloud_project                 = var.create_new_google_project ? google_project.new_google_project[0].project_id : data.google_project.existing_gcp_project[0].project_id
+  google_cloud_project                 = data.google_project.existing_gcp_project.project_id
   ssh_private_key_path                 = var.create_new_ssh_keys ? local_file.red5pro_ssh_key_pem[0].filename : var.existing_private_ssh_key_path
   public_ssh_key                       = var.create_new_ssh_keys ? tls_private_key.red5pro_ssh_key[0].public_key_openssh : file(var.existing_public_ssh_key_path)
   private_ssh_key                      = var.create_new_ssh_keys ? tls_private_key.red5pro_ssh_key[0].private_key_pem : file(var.existing_private_ssh_key_path)
@@ -12,7 +12,7 @@ locals {
   mysql_local_enable                   = local.autoscaling ? false : local.cluster && var.mysql_database_create ? false : true
   mysql_db_system_create               = local.autoscaling ? true : local.cluster && var.mysql_database_create ? true : false
   mysql_host                           = local.autoscaling ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : local.cluster && var.mysql_database_create ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : "localhost"
-  stream_manager_ip                    = local.autoscaling ? google_compute_global_address.lb_reserved_ip[0].address : local.cluster ? google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip : null
+  stream_manager_ip                    = local.autoscaling ? google_compute_global_address.lb_reserved_ip[0].address : local.cluster ? local.sm_nat_ip : null
   lb_ssl_certificate                   = local.autoscaling && var.create_new_lb_ssl_cert ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : local.cluster || local.single ? null : data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id
   lb_ip_address                        = local.autoscaling ? google_compute_global_address.lb_reserved_ip[0].address : null
   create_sm_reserved_ip                = local.cluster && var.create_new_reserved_ip_for_stream_manager ? true : false
@@ -22,26 +22,9 @@ locals {
 ################################################################################
 # Google Cloud Project
 ################################################################################
-# Create a new project in google cloud account
-resource "google_project" "new_google_project" {
-  count      = var.create_new_google_project ? 1 : 0
-  name       = "${var.new_google_project_name}"
-  project_id = "${var.name}-${var.new_google_project_name}"
-  org_id     = var.google_cloud_organization_id
-}
-
-# Use existing project of google cloud account
+# Existing google project of google cloud account
 data "google_project" "existing_gcp_project" {
-  count      = var.create_new_google_project ? 0 : 1
-  project_id = var.existing_google_project_id
-}
-
-resource "google_project_service" "google_api_enable" {
-  count                      = var.create_new_google_project ? 1 : 0
-  project                    = google_project.new_google_project[0].project_id
-  service                    = "compute.googleapis.com"
-  disable_dependent_services = true
-  disable_on_destroy         = true
+  project_id          = var.google_project_id
 }
 
 ################################################################################
@@ -337,6 +320,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   lifecycle {
     ignore_changes = all
   }
+  depends_on = [ google_compute_address.sm_reserved_ip, data.google_compute_address.existing_sm_reserved_ip ]
 }
 
 ################################################################################
@@ -670,6 +654,7 @@ resource "google_compute_instance" "red5_origin_server" {
   lifecycle {
     ignore_changes = all
   }
+  depends_on = [ google_compute_instance.red5_stream_manager_server ]
 }
 
 # Red5 Pro Edge server instance
@@ -1069,11 +1054,18 @@ resource "null_resource" "node_group" {
     trigger_name  = "node-group-trigger"
     SM_IP         = "${local.stream_manager_ip}"
     SM_API_KEY    = "${var.stream_manager_api_key}"
+    NAME          = "${var.name}"
+    ZONE          = element(data.google_compute_zones.available_zone.names, count.index)
   }
 
   provisioner "local-exec" {
     when    = destroy
     command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_IP}' '${self.triggers.SM_API_KEY}'"
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_disk_gcloud_cli.sh '${self.triggers.NAME}' '${self.triggers.ZONE}'"
   }
 
   provisioner "local-exec" {

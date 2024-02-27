@@ -1,24 +1,5 @@
-# Google Cloud Account configuration
-variable "create_new_google_project" {
-  description = "Create a new google project for creating Red5 Pro resources"
-  type        = bool
-  default     = false
-}
-
-variable "new_google_project_name" {
-  description = "New google project name to be created"
-  type        = string
-  default     = ""
-}
-
-variable "google_cloud_organization_id" {
-  description = "Organization ID of the Google cloud in which the Project will be created"
-  type        = string
-  default     = "0"
-}
-
-variable "existing_google_project_id" {
-  description = "Use the existing google project to create resources of Red5 Pro"
+variable "google_project_id" {
+  description = "Google project to create resources of Red5 Pro"
   type        = string
   default     = ""
 }

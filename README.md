@@ -61,13 +61,14 @@ cp ~/Downloads/google-cloud-controller-0.0.0.jar ./
 ## Usage (single)
 
 ```hcl
+provider "google" {
+  project                   = ""                                                             # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
+}
+
 module "red5pro_single" {
   source                    = "../../"
-  google_region              = "us-west2"                                                    # Google region where resources will create eg: us-west2
-
-  create_new_google_project          = true                                                  # True - Create a new project in Gogle account, False - Use existing google project
-  new_google_project_name            = ""                                                    # If create_new_google_project = true, Provide the new google project id
-  existing_google_project_id         = ""                                                    # If create_new_google_project = false, provide the existing google projct id
+  google_region             = "us-west2"                                                     # Google region where resources will create eg: us-west2
+  google_project_id         = ""                                                             # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
   ubuntu_version            = "22.04"                                                        # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
   type                      = "single"                                                       # Deployment type: single, cluster, autoscaling
@@ -76,13 +77,13 @@ module "red5pro_single" {
 
   # SSH key configuration
   create_new_ssh_keys              = true                                                    # true - create new SSH key, false - use existing SSH key
-  new_ssh_key_name                 = "new_key_name"                                          # Name for new SSH key
-  existing_public_ssh_key_path     = "./example-public.pub"                                  # Path to existing SSH public key
-  existing_private_ssh_key_path    = "./example-private.pem"                                 # Path to existing SSH private key
+  new_ssh_key_name                 = "new_key_name"                                          # if `create_new_ssh_keys` = true, Name for new SSH key
+  existing_public_ssh_key_path     = "./example-public.pub"                                  # if `create_new_ssh_keys` = false, Path to existing SSH public key
+  existing_private_ssh_key_path    = "./example-private.pem"                                 # if `create_new_ssh_keys` = false, Path to existing SSH private key
 
   # VPC configuration
   vpc_create                       = true                                                    # True - Create a new VPC in Google Cloud, False - Use existing VPC
-  existing_vpc_network_name        = ""                                                      # Existing VPC name used for the network configuration in Google Cloud
+  existing_vpc_network_name        = ""                                                      # if `vpc_create` = false, Existing VPC name used for the network configuration in Google Cloud
 
   # Single Red5 Pro server HTTPS/SSL certificate configuration
   https_letsencrypt_enable                   = false                                         # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
@@ -141,13 +142,14 @@ output "module_output" {
 ## Usage (cluster)
 
 ```hcl
+provider "google" {
+  project                    = ""                                                          # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
+}
+
 module "red5pro_cluster" {
   source                     = "../../"
-  google_region              = "asia-south1"                                               # Google region where resources will create eg: us-west2
-
-  create_new_google_project          = false                                               # True - Create a new project in Gogle account, False - Use existing google project
-  new_google_project_name            = ""                                                  # If create_new_google_project = true, Provide the new google project id
-  existing_google_project_id         = ""                                                  # If create_new_google_project = false, provide the existing google projct id
+  google_region              = "us-west2"                                                  # Google region where resources will create eg: us-west2
+  google_project_id         = ""                                                           # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
   ubuntu_version            = "22.04"                                                      # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
   type                      = "cluster"                                                    # Deployment type: single, cluster, autoscaling
@@ -157,13 +159,13 @@ module "red5pro_cluster" {
  
   # SSH key configuration
   create_new_ssh_keys              = true                                                  # true - create new SSH key, false - use existing SSH key
-  new_ssh_key_name                 = "new_key_name"                                        # Name for new SSH key
-  existing_public_ssh_key_path     = "./example-public.pub"                                # Path to existing SSH public key
-  existing_private_ssh_key_path    = "./example-private.pem"                               # Path to existing SSH private key
+  new_ssh_key_name                 = "new_key_name"                                        # if `create_new_ssh_keys` = true, Name for new SSH key
+  existing_public_ssh_key_path     = "./example-public.pub"                                # if `create_new_ssh_keys` = false, Path to existing SSH public key
+  existing_private_ssh_key_path    = "./example-public.pem"                                # if `create_new_ssh_keys` = false, Path to existing SSH private key
   
   # VPC configuration
   vpc_create                       = true                                                  # True - Create a new VPC in Google Cloud, False - Use existing VPC
-  existing_vpc_network_name        = ""                                                    # Existing VPC name used for the network configu
+  existing_vpc_network_name        = ""                                                    # if `vpc_create` = false, Existing VPC name used for the network configuration
 
   # Database Configuration
   mysql_database_create     = false                                                        # true - create a new database false- Install locally
@@ -206,7 +208,7 @@ module "red5pro_cluster" {
   origin_image_red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol
   origin_image_red5pro_round_trip_auth_endpoint_validate   = "/validateCredentials"        # Round trip authentication server endpoint for validate
   origin_image_red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
-  origin_red5pro_cloudstorage_enable                   = false                             # Red5 Pro server cloud storage enable/disable (https://www.red5.net/docs/special/cloudstorage-plugin/azure-cloudstorage/)
+  origin_red5pro_cloudstorage_enable                   = false                             # Red5 Pro server cloud storage enable/disable (https://www.red5.net/docs/special/cloudstorage-plugin/google-cloud-platform-storage/)
   origin_red5pro_google_storage_access_key             = ""                                # Red5 Pro server cloud storage - Google Cloud storage access key
   origin_red5pro_google_storage_secret_access_key      = ""                                # Red5 Pro server cloud storage - Google Cloud storage secret access key
   origin_red5pro_google_storage_bucket_name            = ""                                # Red5 Pro server cloud storage - Google Cloud storage bucket name
@@ -258,13 +260,14 @@ output "module_output" {
 ## Usage (autoscaling)
 
 ```hcl
-module "red5pro_autoscaling" {
-  source                     = "../../"
-  google_region              = "asia-south1"                                               # Google region where resources will create eg: us-west2
+provider "google" {
+  project                    = ""                                                          # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
+}
 
-  create_new_google_project          = false                                               # True - Create a new project in Gogle account, False - Use existing google project
-  new_google_project_name            = ""                                                  # If create_new_google_project = true, Provide the new google project id
-  existing_google_project_id         = ""                                                  # If create_new_google_project = false, provide the existing google projct id
+module "red5pro_autoscaling" {
+  source                    = "../../"
+  google_region             = "us-east2"                                                   # Google region where resources will create eg: us-west2
+  google_project_id         = ""                                                           # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
   ubuntu_version            = "22.04"                                                      # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
   type                      = "autoscaling"                                                # Deployment type: single, cluster, autoscaling
@@ -283,7 +286,7 @@ module "red5pro_autoscaling" {
   existing_vpc_network_name        = ""                                                    # if `vpc_create` = false, Existing VPC name used for the network configuration
 
   # Database Configuration
-  mysql_instance_type       = ""                                                           # New database instance type
+  mysql_instance_type       = "db-n1-standard-2"                                           # New database instance type
   mysql_username            = "example-user"                                               # Username for locally install databse and dedicated database in google
   mysql_password            = ""                                                           # Password for locally install databse and dedicated database in google
   mysql_port                = 3306                                                         # Port for locally install databse and dedicated database in google
@@ -321,7 +324,7 @@ module "red5pro_autoscaling" {
   origin_image_red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol
   origin_image_red5pro_round_trip_auth_endpoint_validate   = "/validateCredentials"        # Round trip authentication server endpoint for validate
   origin_image_red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
-  origin_red5pro_cloudstorage_enable                   = false                             # Red5 Pro server cloud storage enable/disable (https://www.red5.net/docs/special/cloudstorage-plugin/azure-cloudstorage/)
+  origin_red5pro_cloudstorage_enable                   = false                             # Red5 Pro server cloud storage enable/disable (https://www.red5.net/docs/special/cloudstorage-plugin/google-cloud-platform-storage/)
   origin_red5pro_google_storage_access_key             = ""                                # Red5 Pro server cloud storage - Google Cloud storage access key
   origin_red5pro_google_storage_secret_access_key      = ""                                # Red5 Pro server cloud storage - Google Cloud storage secret access key
   origin_red5pro_google_storage_bucket_name            = ""                                # Red5 Pro server cloud storage - Google Cloud storage bucket name

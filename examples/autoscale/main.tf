@@ -1,13 +1,14 @@
-#################################################
+####################################################
 # Example for Autoscaling Red5 Pro server deployment
-#################################################
-module "red5pro_autoscaling" {
-  source                     = "../../"
-  google_region              = "asia-south1"                                               # Google region where resources will create eg: us-west2
+####################################################
+provider "google" {
+  project                    = ""                                                          # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
+}
 
-  create_new_google_project          = false                                               # True - Create a new project in Gogle account, False - Use existing google project
-  new_google_project_name            = ""                                                  # If create_new_google_project = true, Provide the new google project id
-  existing_google_project_id         = ""                                                  # If create_new_google_project = false, provide the existing google projct id
+module "red5pro_autoscaling" {
+  source                    = "../../"
+  google_region             = "us-east2"                                                   # Google region where resources will create eg: us-west2
+  google_project_id         = ""                                                           # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
   ubuntu_version            = "22.04"                                                      # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
   type                      = "autoscaling"                                                # Deployment type: single, cluster, autoscaling
@@ -26,7 +27,7 @@ module "red5pro_autoscaling" {
   existing_vpc_network_name        = ""                                                    # if `vpc_create` = false, Existing VPC name used for the network configuration
 
   # Database Configuration
-  mysql_instance_type       = ""                                                           # New database instance type
+  mysql_instance_type       = "db-n1-standard-2"                                           # New database instance type
   mysql_username            = "example-user"                                               # Username for locally install databse and dedicated database in google
   mysql_password            = ""                                                           # Password for locally install databse and dedicated database in google
   mysql_port                = 3306                                                         # Port for locally install databse and dedicated database in google
@@ -64,7 +65,7 @@ module "red5pro_autoscaling" {
   origin_image_red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol
   origin_image_red5pro_round_trip_auth_endpoint_validate   = "/validateCredentials"        # Round trip authentication server endpoint for validate
   origin_image_red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
-  origin_red5pro_cloudstorage_enable                   = false                             # Red5 Pro server cloud storage enable/disable (https://www.red5.net/docs/special/cloudstorage-plugin/azure-cloudstorage/)
+  origin_red5pro_cloudstorage_enable                   = false                             # Red5 Pro server cloud storage enable/disable (https://www.red5.net/docs/special/cloudstorage-plugin/google-cloud-platform-storage/)
   origin_red5pro_google_storage_access_key             = ""                                # Red5 Pro server cloud storage - Google Cloud storage access key
   origin_red5pro_google_storage_secret_access_key      = ""                                # Red5 Pro server cloud storage - Google Cloud storage secret access key
   origin_red5pro_google_storage_bucket_name            = ""                                # Red5 Pro server cloud storage - Google Cloud storage bucket name

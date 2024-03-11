@@ -18,7 +18,7 @@ output "vpc_network_name" {
     description = "VPC Network name"
     value       = module.red5pro_single.google_cloud_vpc_netwrok_name
 }
-output "google_project_name" {
+output "google_project_id" {
     description = "Google Cloud Project"
     value       = module.red5pro_single.google_cloud_project_id
 }

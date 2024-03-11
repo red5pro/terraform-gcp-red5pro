@@ -110,7 +110,7 @@ check_stream_manager(){
         if [ "$i" -eq 20 ]; then
             log_e "EXIT..."
         fi
-        sleep 5
+        sleep 30
     done
 }
 
@@ -167,7 +167,7 @@ add_origin_to_node_group(){
     log_i "Starting a new Origin ..."
 
     CREATE_ORIGIN_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node/origin?accessToken=$SM_API_KEY"
-    resp=$(curl -s --location --request POST $CREATE_ORIGIN_URL)
+    resp=$(curl -s --location --request POST $CREATE_ORIGIN_URL --header 'Content-Type: application/json' --header 'Content-Length: 0' )
     origin_resp=$(echo "$resp" | jq -r '.group')
 
     if [[ "$origin_resp" == "$NODE_GROUP_NAME" ]]; then
@@ -184,7 +184,7 @@ check_node_group(){
     sleep 30
     NODES_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node?accessToken=$SM_API_KEY"
     
-    for i in {1..10};
+    for i in {1..15};
     do
         resp=$(curl -s "$NODES_URL")
         echo "$resp" |jq -r '.[] | [.identifier, .role, .state] | join(" ")' > temp.txt
@@ -211,8 +211,8 @@ check_node_group(){
             fi
             break
         fi
-        if [[ $i -eq 10 ]]; then
-            log_e "Something wrong with nodes states. (Terraform service can't deploy nodes or nodes can't connect to SM). EXIT..."
+        if [[ $i -eq 15 ]]; then
+            log_e "Something wrong with nodes states. (Google Cloud service can't deploy nodes or nodes can't connect to SM). EXIT..."
         fi
         sleep 30
     done

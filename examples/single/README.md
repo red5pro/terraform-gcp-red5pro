@@ -58,7 +58,7 @@ No inputs.
 
 | Name | Description |
 |------|-------------|
-| <a name="output_google_project_name"></a> [google\_project\_name](#output\_google\_project\_name) | Google Cloud Project |
+| <a name="output_google_project_id"></a> [google\_project\_id](#output\_google\_project\_id) | Google Cloud Project |
 | <a name="output_module_output"></a> [module\_output](#output\_module\_output) | n/a |
 | <a name="output_red5pro_server_http_url"></a> [red5pro\_server\_http\_url](#output\_red5pro\_server\_http\_url) | Red5 Pro Server HTTP URL |
 | <a name="output_red5pro_server_https_url"></a> [red5pro\_server\_https\_url](#output\_red5pro\_server\_https\_url) | Red5 Pro Server HTTPS URL |

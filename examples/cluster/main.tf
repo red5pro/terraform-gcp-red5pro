@@ -2,41 +2,42 @@
 # Example for Cluster Red5 Pro server deployment
 #################################################
 provider "google" {
-  project                    = ""                                                          # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
+  project                    = "example-gcp-project-name"                                  # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 }
 
 module "red5pro_cluster" {
-  source                     = "../../"
-  google_region              = "us-west2"                                                  # Google region where resources will create eg: us-west2
-  google_project_id         = ""                                                           # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
+  source                           = "../../"
+  google_region                    = "us-west2"                                            # Google region where resources will create eg: us-west2
+  google_project_id                = "example-gcp-project-name"                            # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
-  ubuntu_version            = "22.04"                                                      # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
-  type                      = "cluster"                                                    # Deployment type: single, cluster, autoscaling
-  name                      = "red5pro-cluster"                                            # Name to be used on all the resources as identifier
-  path_to_red5pro_build     = "./red5pro-server-0.0.0.b0-release.zip"                      # Absolute path or relative path to Red5 Pro server ZIP file
-  path_to_google_cloud_controller = "./google-cloud-controller-0.0.0.jar"                  # Absolute path or relative path to google cloud controller jar file
+  ubuntu_version                   = "22.04"                                               # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
+  type                             = "cluster"                                             # Deployment type: single, cluster, autoscaling
+  name                             = "red5pro-cluster"                                     # Name to be used on all the resources as identifier
+  path_to_red5pro_build            = "./red5pro-server-0.0.0.b0-release.zip"               # Absolute path or relative path to Red5 Pro server ZIP file
+  path_to_google_cloud_controller  = "./google-cloud-controller-0.0.0.jar"                 # Absolute path or relative path to google cloud controller jar file
  
   # SSH key configuration
   create_new_ssh_keys              = true                                                  # true - create new SSH key, false - use existing SSH key
-  new_ssh_key_name                 = "new_key_name"                                        # if `create_new_ssh_keys` = true, Name for new SSH key
-  existing_public_ssh_key_path     = "./example-public.pub"                                # if `create_new_ssh_keys` = false, Path to existing SSH public key
-  existing_private_ssh_key_path    = "./example-private.pem"                               # if `create_new_ssh_keys` = false, Path to existing SSH private key
+  new_ssh_key_name                 = "example-ssh-key"                                     # if `create_new_ssh_keys` = true, Name for new SSH key
+  existing_public_ssh_key_path     = "./example-ssh-key.pub"                               # if `create_new_ssh_keys` = false, Path to existing SSH public key
+  existing_private_ssh_key_path    = "./example-ssh-key.pem"                               # if `create_new_ssh_keys` = false, Path to existing SSH private key
   
   # VPC configuration
   vpc_create                       = true                                                  # True - Create a new VPC in Google Cloud, False - Use existing VPC
-  existing_vpc_network_name        = ""                                                    # if `vpc_create` = false, Existing VPC name used for the network configuration
+  existing_vpc_network_name        = "example-vpc-name"                                    # if `vpc_create` = false, Existing VPC name used for the network configuration
 
   # Database Configuration
-  mysql_database_create     = false                                                        # true - create a new database false- Install locally
-  mysql_instance_type       = "db-n1-standard-2"                                           # New database instance type (https://cloud.google.com/sdk/gcloud/reference/sql/tiers/list)  mysql_username            = "example-user"                                               # Username for locally install databse and dedicated database in google
-  mysql_password            = ""                                                           # Password for locally install databse and dedicated database in google
-  mysql_port                = 3306                                                         # Port for locally install databse and dedicated database in google
+  mysql_database_create            = false                                                 # true - create a new database false- Install locally
+  mysql_instance_type              = "db-n1-standard-2"                                    # New database instance type (https://cloud.google.com/sdk/gcloud/reference/sql/tiers/list)
+  mysql_username                   = "example-user"                                        # Username for locally install databse and dedicated database in google
+  mysql_password                   = "ExamplePassword123"                                  # Password for locally install databse and dedicated database in google
+  mysql_port                       = 3306                                                  # Port for locally install databse and dedicated database in google
 
   # Red5 Pro general configuration
-  red5pro_license_key                           = "1111-2222-3333-4444"                    # Red5 Pro license key (https://account.red5.net/login)
-  red5pro_cluster_key                           = ""                                       # Red5 Pro cluster key
-  red5pro_api_enable                            = true                                     # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5.net/docs/development/api/overview/)
-  red5pro_api_key                               = ""                                       # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
+  red5pro_license_key                        = "1111-2222-3333-4444"                       # Red5 Pro license key (https://account.red5.net/login)
+  red5pro_cluster_key                        = "examplekey"                                # Red5 Pro cluster key
+  red5pro_api_enable                         = true                                        # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5.net/docs/development/api/overview/)
+  red5pro_api_key                            = "examplekey"                                # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
 
   # Red5 Pro server HTTPS/SSL certificate configuration
   https_letsencrypt_enable                   = false                                       # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
@@ -45,11 +46,11 @@ module "red5pro_cluster" {
   https_letsencrypt_certificate_password     = "examplepass"                               # Password for Let's Encrypt SSL certificate
   
   # Red5 Pro server Instance configuration
-  create_new_reserved_ip_for_stream_manager     = true                                     # True - Create a new reserved IP for stream manager, False - Use already created reserved IP address
-  existing_sm_reserved_ip_name                  = ""                                       # If `create_new_reserved_ip_for_stream_manager` = false then specify the name of already create reserved IP for stream manager in the provided region.
-  stream_manager_server_instance_type           = "n2-standard-2"                          # Instance type for Red5 Pro stream manager server
-  stream_manager_api_key                        = ""                                       # Stream Manager api key
-  stream_manager_server_boot_disk_type          = "pd-ssd"                                 # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  create_new_reserved_ip_for_stream_manager  = true                                        # True - Create a new reserved IP for stream manager, False - Use already created reserved IP address
+  existing_sm_reserved_ip_name               = "1.2.3.4"                                   # If `create_new_reserved_ip_for_stream_manager` = false then specify the name of already create reserved IP for stream manager in the provided region.
+  stream_manager_server_instance_type        = "n2-standard-2"                             # Instance type for Red5 Pro stream manager server
+  stream_manager_api_key                     = "examplekey"                                # Stream Manager api key
+  stream_manager_server_boot_disk_type       = "pd-ssd"                                    # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
 
   # Red5 Pro cluster Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
@@ -66,32 +67,31 @@ module "red5pro_cluster" {
   origin_image_red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol
   origin_image_red5pro_round_trip_auth_endpoint_validate   = "/validateCredentials"        # Round trip authentication server endpoint for validate
   origin_image_red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
-  origin_red5pro_cloudstorage_enable                   = false                             # Red5 Pro server cloud storage enable/disable (https://www.red5.net/docs/special/cloudstorage-plugin/google-cloud-platform-storage/)
-  origin_red5pro_google_storage_access_key             = ""                                # Red5 Pro server cloud storage - Google Cloud storage access key
-  origin_red5pro_google_storage_secret_access_key      = ""                                # Red5 Pro server cloud storage - Google Cloud storage secret access key
-  origin_red5pro_google_storage_bucket_name            = ""                                # Red5 Pro server cloud storage - Google Cloud storage bucket name
-  origin_red5pro_cloudstorage_postprocessor_enable     = false                             # Red5 Pro server cloud storage - enable/disable Red5 Pro server postprocessor (https://www.red5.net/docs/special/cloudstorage-plugin/server-configuration/) 
+  origin_red5pro_cloudstorage_enable                       = false                         # Red5 Pro server cloud storage enable/disable (https://www.red5.net/docs/special/cloudstorage-plugin/google-cloud-platform-storage/)
+  origin_red5pro_google_storage_access_key                 = ""                            # Red5 Pro server cloud storage - Google Cloud storage access key
+  origin_red5pro_google_storage_secret_access_key          = ""                            # Red5 Pro server cloud storage - Google Cloud storage secret access key
+  origin_red5pro_google_storage_bucket_name                = ""                            # Red5 Pro server cloud storage - Google Cloud storage bucket name
+  origin_red5pro_cloudstorage_postprocessor_enable         = false                         # Red5 Pro server cloud storage - enable/disable Red5 Pro server postprocessor (https://www.red5.net/docs/special/cloudstorage-plugin/server-configuration/) 
 
   # Red5 Pro autoscaling Node group - (Optional)
-  node_group_create                   = true                                               # Linux or Mac OS only. true - create new Node group, false - not create new Node group
-  node_group_name                     = "example-node-group"                               # Node group name
+  node_group_create                     = true                                             # Linux or Mac OS only. true - create new Node group, false - not create new Node group
+  node_group_name                       = "example-node-group"                             # Node group name
   # Origin node configuration
-  node_group_origins                  = 1                                                  # Number of Origins
-  node_group_origins_instance_type     = "n2-standard-2"                                   # Origins google instance
-  node_group_origins_capacity         = 30                                                 # Connections capacity for Origins
+  node_group_origins                    = 1                                                # Number of Origins
+  node_group_origins_instance_type      = "n2-standard-2"                                  # Origins google instance
+  node_group_origins_capacity           = 20                                               # Connections capacity for Origins
   # Edge node configuration
-  node_group_edges                    = 1                                                  # Number of Edges
-  node_group_edges_instance_type       = "n2-standard-2"                                   # Edges google instance
-  node_group_edges_capacity           = 300                                                # Connections capacity for Edges
+  node_group_edges                      = 1                                                # Number of Edges
+  node_group_edges_instance_type        = "n2-standard-2"                                  # Edges google instance
+  node_group_edges_capacity             = 200                                              # Connections capacity for Edges
   # Transcoder node configuration
-  node_group_transcoders              = 0                                                  # Number of Transcoders
-  node_group_transcoders_instance_type = "n2-standard-2"                                   # Transcoders google instance
-  node_group_transcoders_capacity     = 30                                                 # Connections capacity for Transcoders
+  node_group_transcoders                = 0                                                # Number of Transcoders
+  node_group_transcoders_instance_type  = "n2-standard-2"                                  # Transcoders google instance
+  node_group_transcoders_capacity       = 20                                               # Connections capacity for Transcoders
   # Relay node configuration
-  node_group_relays                   = 0                                                  # Number of Relays
-  node_group_relays_instance_type      = "n2-standard-2"                                   # Relays google instance
-  node_group_relays_capacity          = 30                                                 # Connections capacity for Relays
-
+  node_group_relays                     = 0                                                # Number of Relays
+  node_group_relays_instance_type       = "n2-standard-2"                                  # Relays google instance
+  node_group_relays_capacity            = 20                                               # Connections capacity for Relays
 }
 
 output "module_output" {

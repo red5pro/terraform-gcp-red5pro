@@ -2,13 +2,13 @@
 # Example for single Red5 Pro server deployment 
 #################################################
 provider "google" {
-  project                   = ""                                                             # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
+  project                   = "example-gcp-project-name"                                     # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 }
 
 module "red5pro_single" {
   source                    = "../../"
   google_region             = "us-west2"                                                     # Google region where resources will create eg: us-west2
-  google_project_id         = ""                                                             # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
+  google_project_id         = "example-gcp-project-name"                                     # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
   ubuntu_version            = "22.04"                                                        # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
   type                      = "single"                                                       # Deployment type: single, cluster, autoscaling
@@ -17,13 +17,13 @@ module "red5pro_single" {
 
   # SSH key configuration
   create_new_ssh_keys              = true                                                    # true - create new SSH key, false - use existing SSH key
-  new_ssh_key_name                 = "new_key_name"                                          # if `create_new_ssh_keys` = true, Name for new SSH key
-  existing_public_ssh_key_path     = "./example-public.pub"                                  # if `create_new_ssh_keys` = false, Path to existing SSH public key
-  existing_private_ssh_key_path    = "./example-private.pem"                                 # if `create_new_ssh_keys` = false, Path to existing SSH private key
+  new_ssh_key_name                 = "example-ssh-key"                                          # if `create_new_ssh_keys` = true, Name for new SSH key
+  existing_public_ssh_key_path     = "./example-ssh-key.pub"                                  # if `create_new_ssh_keys` = false, Path to existing SSH public key
+  existing_private_ssh_key_path    = "./example-ssh-key.pem"                                 # if `create_new_ssh_keys` = false, Path to existing SSH private key
 
   # VPC configuration
   vpc_create                       = true                                                    # True - Create a new VPC in Google Cloud, False - Use existing VPC
-  existing_vpc_network_name        = ""                                                      # if `vpc_create` = false, Existing VPC name used for the network configuration in Google Cloud
+  existing_vpc_network_name        = "example-vpc-name"                                      # if `vpc_create` = false, Existing VPC name used for the network configuration in Google Cloud
 
   # Single Red5 Pro server HTTPS/SSL certificate configuration
   https_letsencrypt_enable                   = false                                         # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate

@@ -56,7 +56,7 @@ resource "local_file" "red5pro_ssh_key_pub" {
 # Create VPC
 resource "google_compute_network" "vpc_red5_network" {
   count                   = var.vpc_create ? 1 : 0
-  name                    = "${var.name}-red5-vpc"
+  name                    = "${var.name}-vpc"
   project                 = local.google_cloud_project
   auto_create_subnetworks = true
   delete_default_routes_on_create = false
@@ -80,7 +80,7 @@ data "google_compute_zones" "available_zone" {
 # Create security group
 resource "google_compute_firewall" "red5_single_firewall" {
   count         = local.single ? 1 : 0
-  name          = "${var.name}-red5-single-firewall"
+  name          = "${var.name}-single-firewall"
   network       = local.vpc_network_name
   priority      = 1000
   allow {
@@ -99,7 +99,7 @@ resource "google_compute_firewall" "red5_single_firewall" {
 # Red5 Pro single server instance
 resource "google_compute_instance" "red5_single_server" {
   count        = local.single ? 1 : 0
-  name         = "${var.name}-red5-single-server"
+  name         = "${var.name}-single-server"
   machine_type = var.single_server_instance_type
   zone         = element(data.google_compute_zones.available_zone.names, count.index)
   project      = local.google_cloud_project
@@ -188,7 +188,7 @@ resource "google_compute_instance" "red5_single_server" {
 # Create security group for stream manager
 resource "google_compute_firewall" "red5_stream_manager_firewall" {
   count         = local.cluster_or_autoscaling ? 1 : 0
-  name          = "${var.name}-red5-stream-manager-firewall"
+  name          = "${var.name}-stream-manager-firewall"
   network       = local.vpc_network_name
   allow {
     protocol    = "icmp"
@@ -231,7 +231,7 @@ data "google_compute_address" "existing_sm_reserved_ip" {
 # Red5 Pro Stream Manager Instance
 resource "google_compute_instance" "red5_stream_manager_server" {
   count        = local.cluster_or_autoscaling ? 1 : 0
-  name         = "${var.name}-red5-stream-manager-server"
+  name         = "${var.name}-stream-manager"
   machine_type = var.stream_manager_server_instance_type
   zone         = element(data.google_compute_zones.available_zone.names, count.index)
   project      = local.google_cloud_project
@@ -551,7 +551,7 @@ resource "google_compute_global_forwarding_rule" "lb_https_forward_rule" {
 # Create security group for nodes
 resource "google_compute_firewall" "red5_node_firewall" {
   count         = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
-  name          = "${var.name}-red5-node-firewall"
+  name          = "${var.name}-node-firewall"
   network       = local.vpc_network_name
   priority      = 1000
   allow {
@@ -572,7 +572,7 @@ resource "google_compute_firewall" "red5_node_firewall" {
 # Red5 Pro Origin server instance
 resource "google_compute_instance" "red5_origin_server" {
   count        = var.origin_image_create ? 1 : 0
-  name         = "${var.name}-red5-origin-server"
+  name         = "${var.name}-node-origin-image"
   machine_type = var.origin_server_instance_type
   zone         = element(data.google_compute_zones.available_zone.names, count.index)
   project      = local.google_cloud_project
@@ -660,7 +660,7 @@ resource "google_compute_instance" "red5_origin_server" {
 # Red5 Pro Edge server instance
 resource "google_compute_instance" "red5_edge_server" {
   count        = var.edge_image_create ? 1 : 0
-  name         = "${var.name}-red5-edge-server"
+  name         = "${var.name}-node-edge-image"
   machine_type = var.edge_server_instance_type
   zone         = element(data.google_compute_zones.available_zone.names, count.index)
   project      = local.google_cloud_project
@@ -742,7 +742,7 @@ resource "google_compute_instance" "red5_edge_server" {
 # Red5 Pro Transcoder server instance
 resource "google_compute_instance" "red5_transcoder_server" {
   count        = var.transcoder_image_create ? 1 : 0
-  name         = "${var.name}-red5-transcoder-server"
+  name         = "${var.name}-node-transcoder-image"
   machine_type = var.transcoder_server_instance_type
   zone         = element(data.google_compute_zones.available_zone.names, count.index)
   project      = local.google_cloud_project
@@ -829,7 +829,7 @@ resource "google_compute_instance" "red5_transcoder_server" {
 # Red5 Pro Relay server instance
 resource "google_compute_instance" "red5_relay_server" {
   count        = var.relay_image_create ? 1 : 0
-  name         = "${var.name}-red5-relay-server"
+  name         = "${var.name}-node-relay-image"
   machine_type = var.relay_server_instance_type
   zone         = element(data.google_compute_zones.available_zone.names, count.index)
   project      = local.google_cloud_project

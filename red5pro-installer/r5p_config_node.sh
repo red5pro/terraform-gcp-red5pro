@@ -44,7 +44,7 @@ config_node(){
     local ip_new="http://${SM_IP}:5080/streammanager/cloudwatch"
     local autoscale_pattern='<property name="active" value="false"/>'
     local autoscale_true='<property name="active" value="true"/>'
-    
+
     sed -i -e "s|$ip_pattern|$ip_new|" -e "s|$autoscale_pattern|$autoscale_true|" "$RED5_HOME/conf/autoscale.xml"
     
     local sm_pass_pattern='<property name="password" value="changeme" />'

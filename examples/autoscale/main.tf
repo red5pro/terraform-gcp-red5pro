@@ -7,7 +7,7 @@ provider "google" {
 
 module "red5pro_autoscaling" {
   source                    = "../../"
-  google_region             = "us-east2"                                                   # Google region where resources will create eg: us-west2
+  google_region             = "us-west2"                                                   # Google region where resources will create eg: us-west2
   google_project_id         = ""                                                           # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
   ubuntu_version            = "22.04"                                                      # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04

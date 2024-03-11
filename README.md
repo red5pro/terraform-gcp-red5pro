@@ -169,8 +169,7 @@ module "red5pro_cluster" {
 
   # Database Configuration
   mysql_database_create     = false                                                        # true - create a new database false- Install locally
-  mysql_instance_type       = ""                                                           # New database instance type
-  mysql_username            = "example-user"                                               # Username for locally install databse and dedicated database in google
+  mysql_instance_type       = "db-n1-standard-2"                                           # New database instance type (https://cloud.google.com/sdk/gcloud/reference/sql/tiers/list)  mysql_username            = "example-user"                                               # Username for locally install databse and dedicated database in google
   mysql_password            = ""                                                           # Password for locally install databse and dedicated database in google
   mysql_port                = 3306                                                         # Port for locally install databse and dedicated database in google
 
@@ -266,7 +265,7 @@ provider "google" {
 
 module "red5pro_autoscaling" {
   source                    = "../../"
-  google_region             = "us-east2"                                                   # Google region where resources will create eg: us-west2
+  google_region             = "us-west2"                                                   # Google region where resources will create eg: us-west2
   google_project_id         = ""                                                           # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
   ubuntu_version            = "22.04"                                                      # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04

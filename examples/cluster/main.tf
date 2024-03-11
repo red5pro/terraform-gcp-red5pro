@@ -28,8 +28,7 @@ module "red5pro_cluster" {
 
   # Database Configuration
   mysql_database_create     = false                                                        # true - create a new database false- Install locally
-  mysql_instance_type       = ""                                                           # New database instance type
-  mysql_username            = "example-user"                                               # Username for locally install databse and dedicated database in google
+  mysql_instance_type       = "db-n1-standard-2"                                           # New database instance type (https://cloud.google.com/sdk/gcloud/reference/sql/tiers/list)  mysql_username            = "example-user"                                               # Username for locally install databse and dedicated database in google
   mysql_password            = ""                                                           # Password for locally install databse and dedicated database in google
   mysql_port                = 3306                                                         # Port for locally install databse and dedicated database in google
 

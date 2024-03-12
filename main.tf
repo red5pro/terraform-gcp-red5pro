@@ -1065,7 +1065,7 @@ resource "null_resource" "node_group" {
 
   provisioner "local-exec" {
     when    = destroy
-    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_disk_gcloud_cli.sh '${self.triggers.NAME}-node' '${self.triggers.ZONE}'"
+    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_disk_gcloud_cli.sh '${self.triggers.NAME}' '${self.triggers.ZONE}'"
   }
 
   provisioner "local-exec" {

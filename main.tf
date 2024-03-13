@@ -1056,6 +1056,7 @@ resource "null_resource" "node_group" {
     SM_API_KEY    = "${var.stream_manager_api_key}"
     NAME          = "${var.name}"
     ZONE          = element(data.google_compute_zones.available_zone.names, count.index)
+    ACTION        = var.type
   }
 
   provisioner "local-exec" {
@@ -1065,7 +1066,7 @@ resource "null_resource" "node_group" {
 
   provisioner "local-exec" {
     when    = destroy
-    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_disk_gcloud_cli.sh '${self.triggers.NAME}' '${self.triggers.ZONE}'"
+    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_disk_gcloud_cli.sh '${self.triggers.NAME}' '${self.triggers.ZONE}' '${self.triggers.ACTION}'"
   }
 
   provisioner "local-exec" {

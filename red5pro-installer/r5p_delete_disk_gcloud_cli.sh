@@ -19,6 +19,7 @@ log() {
 
 NAME=$1
 ZONE=$2
+ACTION=$3
 
 if [[ -z "$NAME" ]]; then
     log_e "NAME variable is not set!"
@@ -26,8 +27,15 @@ fi
 if [[ -z "$ZONE" ]]; then
     log_e "ZONE variable is not set!"
 fi
+if [[ -z "$ACTION" ]]; then
+    log_e "ACTION variable is not set!"
+fi
 
-NODES_DISK_NAME=("$NAME-node-origin-image" "$NAME-node-edge-image" "$NAME-node-relay-image" "$NAME-node-transcoder-image" "$NAME-stream-manager")
+if [[ $ACTION == "autoscaling" ]]; then
+    NODES_DISK_NAME=("$NAME-node-origin-image" "$NAME-node-edge-image" "$NAME-node-relay-image" "$NAME-node-transcoder-image" "$NAME-stream-manager")
+else
+    NODES_DISK_NAME=("$NAME-node-origin-image" "$NAME-node-edge-image" "$NAME-node-relay-image" "$NAME-node-transcoder-image")
+fi
 
 for disk_name in "${NODES_DISK_NAME[@]}"; do
     gcloud compute disks list --filter="name=($disk_name)" | grep "$disk_name" | awk '{print$1}' >> disk_details.txt

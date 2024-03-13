@@ -241,7 +241,7 @@ output "module_output" {
 }
 ```
 
-## Red5 Pro Stream Manager autoscale deployment (autoscaling) - [Example](https://github.com/red5pro/terraform-gcp-red5pro/tree/master/examples/autoscaling)
+## Red5 Pro Stream Manager autoscale deployment (autoscaling) - [Example](https://github.com/red5pro/terraform-gcp-red5pro/tree/master/examples/autoscale)
 
 * **VPC** - This Terrform module can either create a new or use your existing VPC. If you wish to create a new VPC, set `vpc_create` to `true`, and the script will ignore the other VPC configurations. To use your existing VPC, set `vpc_create` to `false` and include your existing vpc name.
 * **SSH Keys** -This terraform module can create a new SSH keys or use the already created SSH keys.

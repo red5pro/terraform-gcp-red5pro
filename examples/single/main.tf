@@ -17,14 +17,15 @@ module "red5pro_single" {
 
   # SSH key configuration
   create_new_ssh_keys              = true                                                    # true - create new SSH key, false - use existing SSH key
-  new_ssh_key_name                 = "example-ssh-key"                                          # if `create_new_ssh_keys` = true, Name for new SSH key
-  existing_public_ssh_key_path     = "./example-ssh-key.pub"                                  # if `create_new_ssh_keys` = false, Path to existing SSH public key
+  new_ssh_key_name                 = "example-ssh-key"                                       # if `create_new_ssh_keys` = true, Name for new SSH key
+  existing_public_ssh_key_path     = "./example-ssh-key.pub"                                 # if `create_new_ssh_keys` = false, Path to existing SSH public key
   existing_private_ssh_key_path    = "./example-ssh-key.pem"                                 # if `create_new_ssh_keys` = false, Path to existing SSH private key
 
   # VPC configuration
   vpc_create                       = true                                                    # True - Create a new VPC in Google Cloud, False - Use existing VPC
   existing_vpc_network_name        = "example-vpc-name"                                      # if `vpc_create` = false, Existing VPC name used for the network configuration in Google Cloud
-
+  red5_single_ssh_connection_source_ranges = ["YOUR-PUBLIC-IP/32", "1.2.3.4/32"]             # List of IP address ranges to provide SSH connection with red5 server. Kindly provide your public IP to make SSH connection while running this terraform module
+  
   # Single Red5 Pro server HTTPS/SSL certificate configuration
   https_letsencrypt_enable                   = false                                         # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
   https_letsencrypt_certificate_domain_name  = "red5pro.example.com"                         # Domain name for Let's Encrypt SSL certificate

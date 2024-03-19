@@ -102,7 +102,13 @@ variable "ubuntu_images_gcp" {
 variable "red5_single_firewall_ports" {
   description = "The required port open for the Red5 Single server in Google cloud firewall"
   type        = list(string)
-  default     = ["22", "5080", "443", "80"]
+  default     = ["5080", "443", "80"]
+}
+
+variable "red5_single_ssh_connection_source_ranges" {
+  description = "List of IP which required the SSH connection with Red5 Single Server"
+  type        = list(string)
+  default     = ["0.0.0.0/32"]
 }
 
 variable "single_server_instance_type" {

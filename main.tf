@@ -96,6 +96,19 @@ resource "google_compute_firewall" "red5_single_firewall" {
   project       = local.google_cloud_project
 }
 
+resource "google_compute_firewall" "red5_single_ssh_firewall" {
+  count         = local.single ? 1 : 0
+  name          = "${var.name}-single-ssh-firewall"
+  network       = local.vpc_network_name
+  priority      = 1000
+  allow {
+    protocol    = "tcp"
+    ports       = ["22"]
+  }
+  source_ranges = var.red5_single_ssh_connection_source_ranges
+  project       = local.google_cloud_project
+}
+
 # Red5 Pro single server instance
 resource "google_compute_instance" "red5_single_server" {
   count        = local.single ? 1 : 0

@@ -32,7 +32,11 @@ config_node(){
     log_i "Config NODE"
     
     if [ -z "$SM_IP" ]; then
-        log_w "Parameter SM_IP is empty, EXIT"
+        log_e "Parameter SM_IP is empty, EXIT"
+        exit 1
+    fi
+    if [ -z "$SM_PORT" ]; then
+        log_e "Parameter SM_PORT is empty, EXIT"
         exit 1
     fi
     if [ -z "$NODE_CLUSTER_KEY" ]; then
@@ -41,7 +45,7 @@ config_node(){
     fi
     
     local ip_pattern='http://0.0.0.0:5080/streammanager/cloudwatch'
-    local ip_new="http://${SM_IP}:5080/streammanager/cloudwatch"
+    local ip_new="http://${SM_IP}:${SM_PORT}/streammanager/cloudwatch"
     local autoscale_pattern='<property name="active" value="false"/>'
     local autoscale_true='<property name="active" value="true"/>'
 

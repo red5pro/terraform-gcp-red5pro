@@ -17,8 +17,8 @@ module "red5pro_single" {
 
   # SSH key configuration
   create_new_ssh_keys              = true                                                    # true - create new SSH key, false - use existing SSH key
-  new_ssh_key_name                 = "example-ssh-key"                                          # if `create_new_ssh_keys` = true, Name for new SSH key
-  existing_public_ssh_key_path     = "./example-ssh-key.pub"                                  # if `create_new_ssh_keys` = false, Path to existing SSH public key
+  new_ssh_key_name                 = "example-ssh-key"                                       # if `create_new_ssh_keys` = true, Name for new SSH key
+  existing_public_ssh_key_path     = "./example-ssh-key.pub"                                 # if `create_new_ssh_keys` = false, Path to existing SSH public key
   existing_private_ssh_key_path    = "./example-ssh-key.pem"                                 # if `create_new_ssh_keys` = false, Path to existing SSH private key
 
   # VPC configuration

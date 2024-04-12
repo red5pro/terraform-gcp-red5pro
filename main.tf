@@ -12,11 +12,12 @@ locals {
   mysql_local_enable                   = local.autoscaling ? false : local.cluster && var.mysql_database_create ? false : true
   mysql_db_system_create               = local.autoscaling ? true : local.cluster && var.mysql_database_create ? true : false
   mysql_host                           = local.autoscaling ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : local.cluster && var.mysql_database_create ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : "localhost"
-  stream_manager_ip                    = local.autoscaling ? google_compute_global_address.lb_reserved_ip[0].address : local.cluster ? local.sm_nat_ip : null
-  lb_ssl_certificate                   = local.autoscaling && var.create_new_lb_ssl_cert ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : local.cluster || local.single ? null : data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id
-  lb_ip_address                        = local.autoscaling ? google_compute_global_address.lb_reserved_ip[0].address : null
+  stream_manager_ip                    = local.autoscaling ? local.lb_ip_address : local.cluster ? local.sm_nat_ip : null
+  lb_ssl_certificate                   = local.autoscaling && var.create_new_lb_ssl_cert && var.create_lb_with_ssl ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : local.cluster || local.single ? null : var.create_lb_with_ssl ? data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id : null
+  lb_ip_address                        = local.autoscaling && var.create_new_global_reserved_ip_for_lb ? google_compute_global_address.lb_reserved_ip[0].address : local.autoscaling ? data.google_compute_global_address.existing_lb_reserved_ip[0].address : null
   create_sm_reserved_ip                = local.cluster && var.create_new_reserved_ip_for_stream_manager ? true : false
   sm_nat_ip                            = local.create_sm_reserved_ip ? google_compute_address.sm_reserved_ip[0].address : local.cluster ? data.google_compute_address.existing_sm_reserved_ip[0].address : null
+  sm_port                              = local.autoscaling ? var.lb_http_port_required : "5080"
 }
 
 ################################################################################
@@ -241,6 +242,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     initialize_params {
       image = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
       type  = var.stream_manager_server_boot_disk_type
+      size  = var.stream_manager_server_disk_size
     }
   }
 
@@ -319,6 +321,10 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   }
   lifecycle {
     ignore_changes = all
+    precondition {
+      condition     = var.stream_manager_server_disk_size >= 10
+      error_message = "The Stream Manager Disk size should not be less than 10GB"
+    }
   }
   depends_on = [ google_compute_address.sm_reserved_ip, data.google_compute_address.existing_sm_reserved_ip ]
 }
@@ -373,16 +379,29 @@ resource "google_sql_user" "database_new_user" {
 ################################################################################
 # Reserved IP address for Load Balancer
 resource "google_compute_global_address" "lb_reserved_ip" {
-  count               = local.autoscaling ? 1 : 0 
+  count               = local.autoscaling && var.create_new_global_reserved_ip_for_lb ? 1 : 0 
   name                = "${var.name}-lb-reserver-ip"
   ip_version          = "IPV4"
   address_type        = "EXTERNAL"
   project             = local.google_cloud_project
 }
 
+# Already created reserved IP for Stream Manager
+data "google_compute_global_address" "existing_lb_reserved_ip" {
+  count               = local.single || local.cluster ? 0 : local.autoscaling && var.create_new_global_reserved_ip_for_lb ? 0 : 1 
+  name                = var.existing_global_lb_reserved_ip_name
+  project             = local.google_cloud_project
+  lifecycle {
+    postcondition {
+      condition       = self.address != null
+      error_message   = "The existing IP address with name: ${var.existing_global_lb_reserved_ip_name} does not exist." 
+    }
+  }
+}
+
 # New SSL cerificate for Load Balancer
 resource "google_compute_ssl_certificate" "new_lb_ssl_cert" {
-  count               = local.autoscaling && var.create_new_lb_ssl_cert ? 1 : 0
+  count               = local.autoscaling && var.create_new_lb_ssl_cert && var.create_lb_with_ssl ? 1 : 0
   name_prefix         = "${var.name}-lb-cert"
   private_key         = file(var.new_ssl_private_key_path)
   certificate         = file(var.new_ssl_certificate_key_path)
@@ -394,7 +413,7 @@ resource "google_compute_ssl_certificate" "new_lb_ssl_cert" {
 
 # Existing SSL cerificate for Load Balancer
 data "google_compute_ssl_certificate" "existing_ssl_lb_cert" {
-  count               = var.create_new_lb_ssl_cert ? 0 : 1
+  count               = var.create_lb_with_ssl ? var.create_new_lb_ssl_cert ? 0 : 1 : 0
   name                = var.existing_ssl_certificate_name
   project             = local.google_cloud_project
 }
@@ -469,9 +488,6 @@ resource "google_compute_instance_group_manager" "stream_manager_instance_group"
     initial_delay_sec = 300
   }
 
-  lifecycle {
-    ignore_changes    = [ target_size ]
-  }
   instance_lifecycle_policy {
     force_update_on_repair = "NO"
   }
@@ -518,14 +534,14 @@ resource "google_compute_global_forwarding_rule" "lb_http_forward_rule" {
   project               = local.google_cloud_project
   ip_protocol           = "TCP"
   load_balancing_scheme = "EXTERNAL"
-  port_range            = "5080"
+  port_range            = var.lb_http_port_required
   target                = google_compute_target_http_proxy.lb_http_proxy[0].id
-  ip_address            = google_compute_global_address.lb_reserved_ip[0].id
+  ip_address            = local.lb_ip_address
 }
 
 # Load Balancer HTTPS proxy
 resource "google_compute_target_https_proxy" "lb_https_proxy" {
-  count               = local.autoscaling ? 1 : 0
+  count               = local.autoscaling && var.create_lb_with_ssl ? 1 : 0
   name                = "${var.name}-https-proxy"
   project             = local.google_cloud_project
   url_map             = google_compute_url_map.lb_url_map[0].id
@@ -534,14 +550,14 @@ resource "google_compute_target_https_proxy" "lb_https_proxy" {
 
 # Load Balancer forwarding rule
 resource "google_compute_global_forwarding_rule" "lb_https_forward_rule" {
-  count                 = local.autoscaling ? 1 : 0
+  count                 = local.autoscaling && var.create_lb_with_ssl ? 1 : 0
   name                  = "${var.name}-forwarding-rule-https"
   project               = local.google_cloud_project
   ip_protocol           = "TCP"
   load_balancing_scheme = "EXTERNAL"
   port_range            = "443"
   target                = google_compute_target_https_proxy.lb_https_proxy[0].id
-  ip_address            = google_compute_global_address.lb_reserved_ip[0].id
+  ip_address            = local.lb_ip_address
 }
 
 
@@ -620,6 +636,7 @@ resource "google_compute_instance" "red5_origin_server" {
       "export NODE_CLUSTER_KEY='${var.red5pro_cluster_key}'",
       "export NODE_API_ENABLE='${var.red5pro_api_enable}'",
       "export NODE_API_KEY='${var.red5pro_api_key}'",
+      "export SM_PORT='${local.sm_port}'",
       "export NODE_INSPECTOR_ENABLE='${var.origin_image_red5pro_inspector_enable}'",
       "export NODE_RESTREAMER_ENABLE='${var.origin_image_red5pro_restreamer_enable}'",
       "export NODE_SOCIALPUSHER_ENABLE='${var.origin_image_red5pro_socialpusher_enable}'",
@@ -708,6 +725,7 @@ resource "google_compute_instance" "red5_edge_server" {
       "export NODE_CLUSTER_KEY='${var.red5pro_cluster_key}'",
       "export NODE_API_ENABLE='${var.red5pro_api_enable}'",
       "export NODE_API_KEY='${var.red5pro_api_key}'",
+      "export SM_PORT='${local.sm_port}'",
       "export NODE_INSPECTOR_ENABLE='${var.edge_image_red5pro_inspector_enable}'",
       "export NODE_RESTREAMER_ENABLE='${var.edge_image_red5pro_restreamer_enable}'",
       "export NODE_SOCIALPUSHER_ENABLE='${var.edge_image_red5pro_socialpusher_enable}'",
@@ -790,6 +808,7 @@ resource "google_compute_instance" "red5_transcoder_server" {
       "export NODE_CLUSTER_KEY='${var.red5pro_cluster_key}'",
       "export NODE_API_ENABLE='${var.red5pro_api_enable}'",
       "export NODE_API_KEY='${var.red5pro_api_key}'",
+      "export SM_PORT='${local.sm_port}'",
       "export NODE_INSPECTOR_ENABLE='${var.transcoder_image_red5pro_inspector_enable}'",
       "export NODE_RESTREAMER_ENABLE='${var.transcoder_image_red5pro_restreamer_enable}'",
       "export NODE_SOCIALPUSHER_ENABLE='${var.transcoder_image_red5pro_socialpusher_enable}'",
@@ -877,6 +896,7 @@ resource "google_compute_instance" "red5_relay_server" {
       "export NODE_CLUSTER_KEY='${var.red5pro_cluster_key}'",
       "export NODE_API_ENABLE='${var.red5pro_api_enable}'",
       "export NODE_API_KEY='${var.red5pro_api_key}'",
+      "export SM_PORT='${local.sm_port}'",
       "export NODE_INSPECTOR_ENABLE='${var.relay_image_red5pro_inspector_enable}'",
       "export NODE_RESTREAMER_ENABLE='${var.relay_image_red5pro_restreamer_enable}'",
       "export NODE_SOCIALPUSHER_ENABLE='${var.relay_image_red5pro_socialpusher_enable}'",
@@ -909,7 +929,7 @@ resource "google_compute_instance" "red5_relay_server" {
 }
 
 #################################################################################################
-# Stop droplet which used for creating nodes(Origin, Edge, Transcoder, Relay) images (Gcloud CLI)
+# Stop instances which used for creating nodes(Origin, Edge, Transcoder, Relay) images (Gcloud CLI)
 #################################################################################################
 # Stop Stream Manager virtual machine Gcloud CLI
 resource "null_resource" "delete_stream_manager" {
@@ -955,6 +975,55 @@ resource "null_resource" "delete_relay_node" {
     command    = "gcloud compute instances delete ${google_compute_instance.red5_relay_server[0].name} --zone=${google_compute_instance.red5_relay_server[0].zone} --keep-disks=all --quiet"
   }
   depends_on   = [google_compute_instance.red5_relay_server[0]]
+}
+
+#########################################################################################################
+# Delete instances disk for creating images of nodes(Origin, Edge, Transcoder, Relay) images (Gcloud CLI)
+#########################################################################################################
+# Delete Stream Manager virtual machine disk Gcloud CLI
+resource "null_resource" "delete_stream_manager_disk" {
+  count        = local.autoscaling ? 1 : 0
+  provisioner "local-exec" {
+    command    = "gcloud compute disks delete ${google_compute_instance.red5_stream_manager_server[0].name} --zone=${google_compute_instance.red5_stream_manager_server[0].zone} --quiet"
+  }
+  depends_on   = [google_compute_image.red5_sm_image[0]]
+}
+
+
+# Delete Origin node virtual machine disk Gcloud CLI
+resource "null_resource" "delete_origin_node_disk" {
+  count        = var.origin_image_create ? 1 : 0
+  provisioner "local-exec" {
+    command    = "gcloud compute disks delete ${google_compute_instance.red5_origin_server[0].name} --zone=${google_compute_instance.red5_origin_server[0].zone} --quiet"
+  }
+  depends_on   = [google_compute_image.red5_origin_image[0]]
+}
+
+# Delete Edge node virtual machine disk Gcloud CLI
+resource "null_resource" "delete_edge_node_disk" {
+  count        = var.edge_image_create ? 1 : 0
+  provisioner "local-exec" {
+    command    = "gcloud compute disks delete ${google_compute_instance.red5_edge_server[0].name} --zone=${google_compute_instance.red5_edge_server[0].zone} --quiet"
+  }
+  depends_on   = [google_compute_image.red5_edge_image[0]]
+}
+
+# Delete Transcoder node virtual machine disk Gcloud CLI
+resource "null_resource" "delete_transcoder_node_disk" {
+  count        = var.transcoder_image_create ? 1 : 0
+  provisioner "local-exec" {
+    command    = "gcloud compute disks delete ${google_compute_instance.red5_transcoder_server[0].name} --zone=${google_compute_instance.red5_transcoder_server[0].zone} --quiet"
+  }
+  depends_on   = [google_compute_image.red5_transcoder_image[0]]
+}
+
+# Delete Relay node virtual machine disk Gcloud CLI
+resource "null_resource" "delete_relay_node_disk" {
+  count        = var.relay_image_create ? 1 : 0
+  provisioner "local-exec" {
+    command    = "gcloud compute disks delete ${google_compute_instance.red5_relay_server[0].name} --zone=${google_compute_instance.red5_relay_server[0].zone} --quiet"
+  }
+  depends_on   = [google_compute_image.red5_relay_image[0]]
 }
 
 ####################################################################################################
@@ -1054,19 +1123,12 @@ resource "null_resource" "node_group" {
     trigger_name  = "node-group-trigger"
     SM_IP         = "${local.stream_manager_ip}"
     SM_API_KEY    = "${var.stream_manager_api_key}"
-    NAME          = "${var.name}"
-    ZONE          = element(data.google_compute_zones.available_zone.names, count.index)
-    ACTION        = var.type
+    SM_PORT       = "${local.sm_port}"
   }
 
   provisioner "local-exec" {
     when    = destroy
-    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_IP}' '${self.triggers.SM_API_KEY}'"
-  }
-
-  provisioner "local-exec" {
-    when    = destroy
-    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_disk_gcloud_cli.sh '${self.triggers.NAME}' '${self.triggers.ZONE}' '${self.triggers.ACTION}'"
+    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_IP}' '${self.triggers.SM_API_KEY}' '${self.triggers.SM_PORT}'"
   }
 
   provisioner "local-exec" {
@@ -1075,6 +1137,7 @@ resource "null_resource" "node_group" {
     environment = {
       NAME                       = "${var.name}"
       SM_IP                      = "${local.stream_manager_ip}"
+      SM_PORT                    = "${local.sm_port}",
       SM_API_KEY                 = "${var.stream_manager_api_key}"
       NODE_GROUP_REGION          = "${var.google_region}"
       NODE_GROUP_NAME            = "${var.node_group_name}"

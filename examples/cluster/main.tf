@@ -47,10 +47,11 @@ module "red5pro_cluster" {
   
   # Red5 Pro server Instance configuration
   create_new_reserved_ip_for_stream_manager  = true                                        # True - Create a new reserved IP for stream manager, False - Use already created reserved IP address
-  existing_sm_reserved_ip_name               = "1.2.3.4"                                   # If `create_new_reserved_ip_for_stream_manager` = false then specify the name of already create reserved IP for stream manager in the provided region.
+  existing_sm_reserved_ip_name               = "example-reserved-ip"                       # If `create_new_reserved_ip_for_stream_manager` = false then specify the name of already create reserved IP for stream manager in the provided region.
   stream_manager_server_instance_type        = "n2-standard-2"                             # Instance type for Red5 Pro stream manager server
   stream_manager_api_key                     = "examplekey"                                # Stream Manager api key
   stream_manager_server_boot_disk_type       = "pd-ssd"                                    # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  stream_manager_server_disk_size            = 50                                          # Stream Manager server boot size in GB
 
   # Red5 Pro cluster Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image

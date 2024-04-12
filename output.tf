@@ -89,5 +89,5 @@ output "stream_manager_https_url" {
 
 output "load_balancer_url" {
   description = "Load Balancer HTTPS URL"
-  value       = local.autoscaling ? "https://${local.lb_ip_address}:443" : null
+  value       = local.autoscaling && var.create_lb_with_ssl ? "https://${local.lb_ip_address}:443" : local.autoscaling ? "http://${local.lb_ip_address}:${local.sm_port}" : null
 }

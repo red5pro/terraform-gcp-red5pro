@@ -2,7 +2,7 @@
 
 SM_IP=$1
 SM_API_KEY=$2
-
+SM_PORT=$3
 log_i() {
     log
     printf "\033[0;32m [INFO]  --- %s \033[0m\n" "${@}"
@@ -25,19 +25,25 @@ delete_node_group(){
 
     if [[ -z "$SM_IP" ]]; then
         log_e "SM_IP is not set!"
+        exit 1
     fi
     if [[ -z "$SM_API_KEY" ]]; then
         log_e "SM_API_KEY is not set!"
+        exit 1
+    fi
+    if [ -z "$SM_PORT" ]; then
+        log_e "Parameter SM_PORT is empty, EXIT"
+        exit 1
     fi
 
     error=0
     
-    NODE_GROUPS=$(curl -s "http://${SM_IP}:5080/streammanager/api/4.0/admin/nodegroup?accessToken=${SM_API_KEY}" |jq -r '.[].name')
+    NODE_GROUPS=$(curl -s "http://${SM_IP}:${SM_PORT}/streammanager/api/4.0/admin/nodegroup?accessToken=${SM_API_KEY}" |jq -r '.[].name')
     
     for group in $NODE_GROUPS
     do
         log_i "Deleting node group: $group"
-        DELETE_NODE_GROUP=$(curl -s --location --request DELETE "http://${SM_IP}:5080/streammanager/api/4.0/admin/nodegroup/${group}?accessToken=${SM_API_KEY}")
+        DELETE_NODE_GROUP=$(curl -s --location --request DELETE "http://${SM_IP}:${SM_PORT}/streammanager/api/4.0/admin/nodegroup/${group}?accessToken=${SM_API_KEY}")
         delete_resp=$(echo "$DELETE_NODE_GROUP" | jq -r '.name')
         
         if [[ "$delete_resp" == "$group" ]]; then

@@ -42,13 +42,18 @@ module "red5pro_autoscaling" {
   stream_manager_server_instance_type  = "n2-standard-2"                                   # Instance type for Red5 Pro stream manager server
   stream_manager_api_key               = "examplekey"                                      # Stream Manager api key
   stream_manager_server_boot_disk_type = "pd-ssd"                                          # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  stream_manager_server_disk_size      = 10                                                # Stream Manager server boot size in GB
 
 # Load Balancer Configuration
+  create_new_global_reserved_ip_for_lb = true                                              # True - Create a new reserved IP for Load Balancer, False - Use existing reserved IP for Load Balancer
+  existing_global_lb_reserved_ip_name  = ""                                                # If `create_new_global_reserved_ip_for_lb` - False, Use the already created Load balancer IP address name
+  lb_http_port_required                = "5080"                                            # The required HTTP port used by Load Balancer other than HTTPS, Default 5080
   count_of_stream_managers             = 1                                                 # Amount of Stream Managers to deploy in autoscale setup
-  create_new_lb_ssl_cert               = true                                              # True - Create a new SSL certificate for the Load Balancer, False - Use existing SSL certificate for Load Balancer
-  new_ssl_private_key_path             = "/path/to/privkey.pem"                            # if `create_new_lb_ssl_cert` = true, Path to the new SSL certificate private key file
-  new_ssl_certificate_key_path         = "/path/to/fullchain.pem"                          # if `create_new_lb_ssl_cert` = true, Path to the new SSL certificate key file
-  existing_ssl_certificate_name        = "example-certificate-name"                        # if `create_new_lb_ssl_cert` = false, Existing SSL certificate name which is already created in the Google Cloud. If creating a new project in GCP, kindly create a new SSL certificate
+  create_lb_with_ssl                   = true                                              # True- Create the Load Balancer with SSL, False - Create the Load Balancer without SSL
+  create_new_lb_ssl_cert               = true                                              # if `create_lb_with_ssl` True - Create a new SSL certificate for the Load Balancer, False - Use existing SSL certificate for Load Balancer
+  new_ssl_private_key_path             = "/path/to/privkey.pem"                            # if `create_lb_with_ssl` and `create_new_lb_ssl_cert` = true, Path to the new SSL certificate private key file
+  new_ssl_certificate_key_path         = "/path/to/fullchain.pem"                          # if `create_lb_with_ssl` and `create_new_lb_ssl_cert` = true, Path to the new SSL certificate key file
+  existing_ssl_certificate_name        = "example-certificate-name"                        # if `create_lb_with_ssl` - False, Create the Load balancer without any SSL But, if `create_new_lb_ssl_cert` = false and `create_lb_with_ssl` - True, Existing SSL certificate name which is already created in the Google Cloud. If creating a new project in GCP, kindly create a new SSL certificate
 
   # Red5 Pro cluster Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image

@@ -321,6 +321,12 @@ variable "stream_manager_server_boot_disk_type" {
   default     = ""
 }
 
+variable "stream_manager_server_disk_size" {
+  description = "Stream Manager server boot size in GB"
+  type        = number
+  default     = 10
+}
+
 variable "red5pro_cluster_key" {
   description = "Red5Pro Cluster Key"
   type        = string
@@ -352,8 +358,31 @@ variable "count_of_stream_managers" {
   default     = 1
 }
 
+variable "lb_http_port_required" {
+  description = "The required HTTP port used by Load Balancer, Default 5080"
+  type        = string
+  default     = "5080"
+}
+
+variable "create_new_global_reserved_ip_for_lb" {
+  description = "Create a new reserved IP for Load Balancer"
+  type        = bool
+  default     = true
+}
+
+variable "existing_global_lb_reserved_ip_name" {
+  description = "Already created Reserved IP address name for Load Balancer"
+  type        = string
+  default     = ""
+}
+
 variable "create_new_lb_ssl_cert" {
   description = "True - Create a new SSL certificate for the Load Balancer, False - Use existing SSL certificate for Load Balancer "
+  type        = bool
+  default     = true
+}
+variable "create_lb_with_ssl" {
+  description = "True - Create the Load Balancer with SSL, False - Create the Load Balancr without SSL"
   type        = bool
   default     = true
 }

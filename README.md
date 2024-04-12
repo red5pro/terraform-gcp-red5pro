@@ -6,8 +6,8 @@ This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/d
 ## This module has 3 variants of Red5 Pro deployments
 
 * **single** - Single instance with installed and configured Red5 Pro server
-* **cluster** - Stream Manager cluster (MySQL DB + Stream Manager instance + Autoscaling Node group with Origin, Edge, Transcoder, Relay droplets)
-* **autoscaling** - Autoscaling Stream Managers (MySQL DB + Load Balancer + Autoscaling Stream Managers + Autoscaling Node group with Origin, Edge, Transcoder, Relay droplets)
+* **cluster** - Stream Manager cluster (MySQL DB + Stream Manager instance + Autoscaling Node group with Origin, Edge, Transcoder, Relay instance)
+* **autoscaling** - Autoscaling Stream Managers (MySQL DB + Load Balancer + Autoscaling Stream Managers + Autoscaling Node group with Origin, Edge, Transcoder, Relay instance)
 
 ---
 
@@ -189,10 +189,11 @@ module "red5pro_cluster" {
   
   # Red5 Pro server Instance configuration
   create_new_reserved_ip_for_stream_manager  = true                                        # True - Create a new reserved IP for stream manager, False - Use already created reserved IP address
-  existing_sm_reserved_ip_name               = "1.2.3.4"                                   # If `create_new_reserved_ip_for_stream_manager` = false then specify the name of already create reserved IP for stream manager in the provided region.
+  existing_sm_reserved_ip_name               = "example-reserved-ip"                       # If `create_new_reserved_ip_for_stream_manager` = false then specify the name of already create reserved IP for stream manager in the provided region.
   stream_manager_server_instance_type        = "n2-standard-2"                             # Instance type for Red5 Pro stream manager server
   stream_manager_api_key                     = "examplekey"                                # Stream Manager api key
   stream_manager_server_boot_disk_type       = "pd-ssd"                                    # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  stream_manager_server_disk_size            = 50                                          # Stream Manager server boot size in GB
 
   # Red5 Pro cluster Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
@@ -242,7 +243,7 @@ output "module_output" {
 }
 ```
 
-## Red5 Pro Stream Manager autoscale deployment (autoscaling) - [Example](https://github.com/red5pro/terraform-gcp-red5pro/tree/master/examples/autoscaling)
+## Red5 Pro Stream Manager autoscale deployment (autoscaling) - [Example](https://github.com/red5pro/terraform-gcp-red5pro/tree/master/examples/autoscale)
 
 * **VPC** - This Terrform module can either create a new or use your existing VPC. If you wish to create a new VPC, set `vpc_create` to `true`, and the script will ignore the other VPC configurations. To use your existing VPC, set `vpc_create` to `false` and include your existing vpc name.
 * **SSH Keys** -This terraform module can create a new SSH keys or use the already created SSH keys.
@@ -301,13 +302,18 @@ module "red5pro_autoscaling" {
   stream_manager_server_instance_type  = "n2-standard-2"                                   # Instance type for Red5 Pro stream manager server
   stream_manager_api_key               = "examplekey"                                      # Stream Manager api key
   stream_manager_server_boot_disk_type = "pd-ssd"                                          # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  stream_manager_server_disk_size      = 10                                                # Stream Manager server boot size in GB
 
 # Load Balancer Configuration
+  create_new_global_reserved_ip_for_lb = true                                              # True - Create a new reserved IP for Load Balancer, False - Use existing reserved IP for Load Balancer
+  existing_global_lb_reserved_ip_name  = ""                                                # If `create_new_global_reserved_ip_for_lb` - False, Use the already created Load balancer IP address name
+  lb_http_port_required                = "5080"                                            # The required HTTP port used by Load Balancer other than HTTPS, Default 5080
   count_of_stream_managers             = 1                                                 # Amount of Stream Managers to deploy in autoscale setup
-  create_new_lb_ssl_cert               = true                                              # True - Create a new SSL certificate for the Load Balancer, False - Use existing SSL certificate for Load Balancer
-  new_ssl_private_key_path             = "/path/to/privkey.pem"                            # if `create_new_lb_ssl_cert` = true, Path to the new SSL certificate private key file
-  new_ssl_certificate_key_path         = "/path/to/fullchain.pem"                          # if `create_new_lb_ssl_cert` = true, Path to the new SSL certificate key file
-  existing_ssl_certificate_name        = "example-certificate-name"                        # if `create_new_lb_ssl_cert` = false, Existing SSL certificate name which is already created in the Google Cloud. If creating a new project in GCP, kindly create a new SSL certificate
+  create_lb_with_ssl                   = true                                              # True- Create the Load Balancer with SSL, False - Create the Load Balancer without SSL
+  create_new_lb_ssl_cert               = true                                              # if `create_lb_with_ssl` True - Create a new SSL certificate for the Load Balancer, False - Use existing SSL certificate for Load Balancer
+  new_ssl_private_key_path             = "/path/to/privkey.pem"                            # if `create_lb_with_ssl` and `create_new_lb_ssl_cert` = true, Path to the new SSL certificate private key file
+  new_ssl_certificate_key_path         = "/path/to/fullchain.pem"                          # if `create_lb_with_ssl` and `create_new_lb_ssl_cert` = true, Path to the new SSL certificate key file
+  existing_ssl_certificate_name        = "example-certificate-name"                        # if `create_lb_with_ssl` - False, Create the Load balancer without any SSL But, if `create_new_lb_ssl_cert` = false and `create_lb_with_ssl` - True, Existing SSL certificate name which is already created in the Google Cloud. If creating a new project in GCP, kindly create a new SSL certificate
 
   # Red5 Pro cluster Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image

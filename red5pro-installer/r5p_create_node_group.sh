@@ -90,8 +90,13 @@ prepare_json_templates(){
 
 check_stream_manager(){
     log_i "Checking Stream Manager status..."
+
+    if [ -z "$SM_PORT" ]; then
+        log_e "Parameter SM_PORT is empty, EXIT"
+        exit 1
+    fi
     
-    SM_STATUS_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/debug/cloudcontroller?accessToken=$SM_API_KEY"
+    SM_STATUS_URL="http://$SM_IP:$SM_PORT/streammanager/api/4.0/admin/debug/cloudcontroller?accessToken=$SM_API_KEY"
 
     for i in {1..20}; do
         curl -s -m 5 -o /dev/null -w "%{http_code}" curl "$SM_STATUS_URL" > /dev/null
@@ -117,7 +122,7 @@ check_stream_manager(){
 create_scale_policy(){
     log_i "Creating a new Scale Policy with name: $scale_policy_name"
     
-    CREATE_SCALE_POLICY_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/configurations/scalepolicy?accessToken=$SM_API_KEY"
+    CREATE_SCALE_POLICY_URL="http://$SM_IP:$SM_PORT/streammanager/api/4.0/admin/configurations/scalepolicy?accessToken=$SM_API_KEY"
 
     resp=$(curl -s --location --request POST "$CREATE_SCALE_POLICY_URL" --header 'Content-Type: application/json' -d "$scale_policy")
     scale_policy_name_resp=$(echo "$resp" | jq -r '.policy.name')
@@ -133,7 +138,7 @@ create_scale_policy(){
 create_launch_config(){
     log_i "Creating a new Launch Config with name: $launch_config_name"
 
-    CREATE_LAUNCH_CONFIG_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/configurations/launchconfig?accessToken=$SM_API_KEY"
+    CREATE_LAUNCH_CONFIG_URL="http://$SM_IP:$SM_PORT/streammanager/api/4.0/admin/configurations/launchconfig?accessToken=$SM_API_KEY"
     
     resp=$(curl -s --location --request POST "$CREATE_LAUNCH_CONFIG_URL" --header 'Content-Type: application/json' -d "$launch_config")
     launch_config_name_resp=$(echo "$resp" | jq -r '.name')
@@ -149,7 +154,7 @@ create_launch_config(){
 create_new_node_group(){
     log_i "Creating a new Node Group with name: $NODE_GROUP_NAME"
 
-    CREATE_NODE_GROUP_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/nodegroup?accessToken=$SM_API_KEY"   
+    CREATE_NODE_GROUP_URL="http://$SM_IP:$SM_PORT/streammanager/api/4.0/admin/nodegroup?accessToken=$SM_API_KEY"   
     node_group="{"regions":["$NODE_GROUP_REGION"],"launchConfig":"$launch_config_name","scalePolicy":"$scale_policy_name","name":"$NODE_GROUP_NAME"}"
 
     resp=$(curl -s --location --request POST "$CREATE_NODE_GROUP_URL" --header 'Content-Type: application/json' -d "$node_group")
@@ -166,7 +171,7 @@ create_new_node_group(){
 add_origin_to_node_group(){
     log_i "Starting a new Origin ..."
 
-    CREATE_ORIGIN_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node/origin?accessToken=$SM_API_KEY"
+    CREATE_ORIGIN_URL="http://$SM_IP:$SM_PORT/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node/origin?accessToken=$SM_API_KEY"
     resp=$(curl -s --location --request POST $CREATE_ORIGIN_URL --header 'Content-Type: application/json' --header 'Content-Length: 0' )
     origin_resp=$(echo "$resp" | jq -r '.group')
 
@@ -182,7 +187,7 @@ check_node_group(){
     
     log_i "Checking states of nodes in new node group."
     sleep 30
-    NODES_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node?accessToken=$SM_API_KEY"
+    NODES_URL="http://$SM_IP:$SM_PORT/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node?accessToken=$SM_API_KEY"
     
     for i in {1..15};
     do

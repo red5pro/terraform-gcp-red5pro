@@ -775,10 +775,15 @@ variable "node_group_name" {
   type        = string
   default     = ""
 }
-variable "node_group_origins" {
-  description = "Number of Origins"
+variable "node_group_origins_min" {
+  description = "Number of minimum Origins"
   type        = number
   default     = 1
+}
+variable "node_group_origins_max" {
+  description = "Number of maximum Origins"
+  type        = number
+  default     = 20
 }
 variable "node_group_origins_instance_type" {
   description = "Instance type for Origins"
@@ -790,10 +795,15 @@ variable "node_group_origins_capacity" {
   type        = number
   default     = 30
 }
-variable "node_group_edges" {
-  description = "Number of Edges"
+variable "node_group_edges_min" {
+  description = "Number of minimum Edges"
   type        = number
   default     = 1
+}
+variable "node_group_edges_max" {
+  description = "Number of maximum Edges"
+  type        = number
+  default     = 40
 }
 variable "node_group_edges_instance_type" {
   description = "Instance type for Edges"
@@ -805,10 +815,15 @@ variable "node_group_edges_capacity" {
   type        = number
   default     = 300
 }
-variable "node_group_transcoders" {
-  description = "Number of Transcoders"
+variable "node_group_transcoders_min" {
+  description = "Number of minimum Transcoders"
   type        = number
   default     = 1
+}
+variable "node_group_transcoders_max" {
+  description = "Number of maximum Transcoders"
+  type        = number
+  default     = 20
 }
 variable "node_group_transcoders_instance_type" {
   description = "Instance type for Transcoders"
@@ -820,10 +835,15 @@ variable "node_group_transcoders_capacity" {
   type        = number
   default     = 30
 }
-variable "node_group_relays" {
-  description = "Number of Relays"
+variable "node_group_relays_min" {
+  description = "Number of minimum Relays"
   type        = number
   default     = 1
+}
+variable "node_group_relays_max" {
+  description = "Number of maximum Relays"
+  type        = number
+  default     = 20
 }
 variable "node_group_relays_instance_type" {
   description = "Instance type for Relays"

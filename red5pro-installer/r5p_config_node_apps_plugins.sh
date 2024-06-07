@@ -170,7 +170,10 @@ config_node_apps_plugins(){
         google_storage_bucket_name="gs.bucket.name=.*"
         google_storage_bucket_name_new="gs.bucket.name=${NODE_CLOUDSTORAGE_GOOGLE_STORAGE_BUCKET_NAME}"
 
-        sed -i -e "s|$google_service|$google_service_new|" -e "s|$max_transcode_min|$max_transcode_min_new|" -e "s|$google_storage_access_key|$google_storage_access_key_new|" -e "s|$google_storage_secret_access_key|$google_storage_secret_access_key_new|" -e "s|$google_storage_bucket_name|$google_storage_bucket_name_new|" "$RED5_HOME/conf/cloudstorage-plugin.properties"
+        stream_dir="streams.dir=.*"
+        stream_dir_new="streams.dir=$RED5_HOME/webapps/"
+
+        sed -i -e "s|$google_service|$google_service_new|" -e "s|$stream_dir|$stream_dir_new|" -e "s|$max_transcode_min|$max_transcode_min_new|" -e "s|$google_storage_access_key|$google_storage_access_key_new|" -e "s|$google_storage_secret_access_key|$google_storage_secret_access_key_new|" -e "s|$google_storage_bucket_name|$google_storage_bucket_name_new|" "$RED5_HOME/conf/cloudstorage-plugin.properties"
 
         if [[ "$NODE_CLOUDSTORAGE_POSTPROCESSOR_ENABLE" == "true" ]]; then
             log_i "Config google Cloudstorage plugin - PostProcessor to FLV: $RED5_HOME/conf/red5-common.xml"

@@ -14,8 +14,9 @@ module "red5pro_cluster" {
   type                             = "cluster"                                             # Deployment type: single, cluster, autoscaling
   name                             = "red5pro-cluster"                                     # Name to be used on all the resources as identifier
   path_to_red5pro_build            = "./red5pro-server-0.0.0.b0-release.zip"               # Absolute path or relative path to Red5 Pro server ZIP file
-  path_to_google_cloud_controller  = "./google-cloud-controller-0.0.0.jar"                 # Absolute path or relative path to google cloud controller jar file
- 
+  path_to_terraform_cloud_controller  = "./terraform-cloud-controller-0.0.0.jar"           # Absolute path or relative path to terraform cloud controller jar file
+  path_to_terraform_service_build     = "./terraform-service-0.0.0.zip"                    # Absolute path or relative path to terraform service ZIP file
+
   # SSH key configuration
   create_new_ssh_keys              = true                                                  # true - create new SSH key, false - use existing SSH key
   new_ssh_key_name                 = "example-ssh-key"                                     # if `create_new_ssh_keys` = true, Name for new SSH key
@@ -45,6 +46,15 @@ module "red5pro_cluster" {
   https_letsencrypt_certificate_email        = "email@example.com"                         # Email for Let's Encrypt SSL certificate
   https_letsencrypt_certificate_password     = "examplepass"                               # Password for Let's Encrypt SSL certificate
   
+  # Terraform Service configuration
+  terraform_service_instance_create = false                                                # true - Create a dedicate terraform service instance, false - install terraform service locally on the stream manager
+  terraform_service_api_key         = "examplekey"                                         # Terraform service api key
+  terraform_service_parallelism     = "20"                                                 # Terraform service parallelism
+  terraform_service_boot_disk_type  = "pd-ssd"                                             # Boot disk type for Terraform server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  terraform_service_instance_type   = "n2-standard-2"                                      # Terraform service Instance type
+  gcp_node_boot_disk_type           = "pd-ssd"                                             # Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  gcp_node_network_tag              = "null"                                               # Specify Node Network tag which will be used by Terraform service while creating Node. Default value is null
+
   # Red5 Pro server Instance configuration
   create_new_reserved_ip_for_stream_manager  = true                                        # True - Create a new reserved IP for stream manager, False - Use already created reserved IP address
   existing_sm_reserved_ip_name               = "example-reserved-ip"                       # If `create_new_reserved_ip_for_stream_manager` = false then specify the name of already create reserved IP for stream manager in the provided region.

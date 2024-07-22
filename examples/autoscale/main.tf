@@ -14,7 +14,8 @@ module "red5pro_autoscaling" {
   type                             = "autoscaling"                                         # Deployment type: single, cluster, autoscaling
   name                             = "red5pro-autoscaling"                                 # Name to be used on all the resources as identifier
   path_to_red5pro_build            = "./red5pro-server-0.0.0.b0-release.zip"               # Absolute path or relative path to Red5 Pro server ZIP file
-  path_to_google_cloud_controller  = "./google-cloud-controller-0.0.0.jar"                 # Absolute path or relative path to google cloud controller jar file
+  path_to_terraform_cloud_controller  = "./terraform-cloud-controller-0.0.0.jar"           # Absolute path or relative path to terraform cloud controller jar file
+  path_to_terraform_service_build     = "./terraform-service-0.0.0.zip"                    # Absolute path or relative path to terraform service ZIP file
 
   # SSH key configuration
   create_new_ssh_keys              = true                                                  # true - create new SSH key, false - use existing SSH key
@@ -44,7 +45,15 @@ module "red5pro_autoscaling" {
   stream_manager_server_boot_disk_type = "pd-ssd"                                          # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
   stream_manager_server_disk_size      = 10                                                # Stream Manager server boot size in GB
 
-# Load Balancer Configuration
+  # Terraform Service configuration
+  terraform_service_api_key         = "examplekey"                                         # Terraform service api key
+  terraform_service_parallelism     = "20"                                                 # Terraform service parallelism
+  terraform_service_boot_disk_type  = "pd-ssd"                                             # Boot disk type for Terraform server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  terraform_service_instance_type   = "n2-standard-2"                                      # Terraform service Instance type
+  gcp_node_boot_disk_type           = "pd-ssd"                                             # Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  gcp_node_network_tag              = "null"                                               # Specify Node Network tag which will be used by Terraform service while creating Node. Default value is null
+
+  # Load Balancer Configuration
   create_new_global_reserved_ip_for_lb = true                                              # True - Create a new reserved IP for Load Balancer, False - Use existing reserved IP for Load Balancer
   existing_global_lb_reserved_ip_name  = ""                                                # If `create_new_global_reserved_ip_for_lb` - False, Use the already created Load balancer IP address name
   lb_http_port_required                = "5080"                                            # The required HTTP port used by Load Balancer other than HTTPS, Default 5080

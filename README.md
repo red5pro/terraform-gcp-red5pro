@@ -7,7 +7,7 @@ This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/d
 
 * **single** - Single instance with installed and configured Red5 Pro server
 * **cluster** - Stream Manager cluster (MySQL DB + Stream Manager instance + Autoscaling Node group with Origin, Edge, Transcoder, Relay instance)
-* **autoscaling** - Autoscaling Stream Managers (MySQL DB + Load Balancer + Autoscaling Stream Managers + Autoscaling Node group with Origin, Edge, Transcoder, Relay instance)
+* **autoscaling** - Autoscaling Stream Managers (MySQL DB + Load Balancer + Autoscaling Stream Managers + Terraform Service + Autoscaling Node group with Origin, Edge, Transcoder, Relay instance)
 
 ---
 
@@ -32,7 +32,8 @@ This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/d
 * Install **Google Cloud CLI** https://cloud.google.com/sdk/docs/install
 * Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is using in bash scripts to create/delete Stream Manager node group using API)
 * Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5.net/downloads
-* Download Red5 Pro Google controller for Google CLoud: (Example: google-cloud-controller-0.0.0.jar) https://account.red5.net/downloads
+* * Download Red5 Pro Terraform controller for Google Cloud: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5.net/downloads
+* Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5.net/downloads
 * Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5.net
 * Login to Goolge Cloud CLI (To login to CLI follow the below documents or use the below mentioned command) 
   * Follow the documentation for CLI login - https://cloud.google.com/sdk/gcloud/reference/auth/login
@@ -47,7 +48,8 @@ Example:
 
 ```bash
 cp ~/Downloads/red5pro-server-0.0.0.b0-release.zip ./
-cp ~/Downloads/google-cloud-controller-0.0.0.jar ./
+cp ~/Downloads/terraform-cloud-controller-0.0.0.jar ./
+cp ~/Downloads/terraform-service-0.0.0.zip ./
 ```
 
 ## Single Red5 Pro server deployment (single) - [Example](https://github.com/red5pro/terraform-gcp-red5pro/tree/master/examples/single)
@@ -135,6 +137,7 @@ output "module_output" {
 * **SSL Certificates** - User can install Let's encrypt SSL certificates or use Red5Pro server without SSL certificate (HTTP only).
 * **MySQL Database** - Users have flexibility to create a MySQL databse server in Google Cloud or install it locally on the Stream Manager
 * **Stream Manager** - Instance will be created automatically for Stream Manager
+* **Terraform Server** - Uesrs can choose to create a dedicated instance for Terraform Server or install it locally on the Stream Manager
 * **Origin Node Image** - To create Google Cloud(Gcloud) custom image for Orgin Node type for Stream Manager node group
 * **Edge Node Image** - To create Google Cloud(Gcloud) custom image for Edge Node type for Stream Manager node group (optional)
 * **Transcoder Node Image** - To create Google Cloud(Gcloud) custom image for Transcoder Node type for Stream Manager node group (optional)
@@ -156,8 +159,9 @@ module "red5pro_cluster" {
   type                             = "cluster"                                             # Deployment type: single, cluster, autoscaling
   name                             = "red5pro-cluster"                                     # Name to be used on all the resources as identifier
   path_to_red5pro_build            = "./red5pro-server-0.0.0.b0-release.zip"               # Absolute path or relative path to Red5 Pro server ZIP file
-  path_to_google_cloud_controller  = "./google-cloud-controller-0.0.0.jar"                 # Absolute path or relative path to google cloud controller jar file
- 
+  path_to_terraform_cloud_controller  = "./terraform-cloud-controller-0.0.0.jar"           # Absolute path or relative path to terraform cloud controller jar file
+  path_to_terraform_service_build     = "./terraform-service-0.0.0.zip"                    # Absolute path or relative path to terraform service ZIP file
+
   # SSH key configuration
   create_new_ssh_keys              = true                                                  # true - create new SSH key, false - use existing SSH key
   new_ssh_key_name                 = "example-ssh-key"                                     # if `create_new_ssh_keys` = true, Name for new SSH key
@@ -187,6 +191,15 @@ module "red5pro_cluster" {
   https_letsencrypt_certificate_email        = "email@example.com"                         # Email for Let's Encrypt SSL certificate
   https_letsencrypt_certificate_password     = "examplepass"                               # Password for Let's Encrypt SSL certificate
   
+  # Terraform Service configuration
+  terraform_service_instance_create = false                                                # true - Create a dedicate terraform service instance, false - install terraform service locally on the stream manager
+  terraform_service_api_key         = "examplekey"                                         # Terraform service api key
+  terraform_service_parallelism     = "20"                                                 # Terraform service parallelism
+  terraform_service_boot_disk_type  = "pd-ssd"                                             # Boot disk type for Terraform server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  terraform_service_instance_type   = "n2-standard-2"                                      # Terraform service Instance type
+  gcp_node_boot_disk_type           = "pd-ssd"                                             # Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  gcp_node_network_tag              = "null"                                               # Specify Node Network tag which will be used by Terraform service while creating Node. Default value is null
+
   # Red5 Pro server Instance configuration
   create_new_reserved_ip_for_stream_manager  = true                                        # True - Create a new reserved IP for stream manager, False - Use already created reserved IP address
   existing_sm_reserved_ip_name               = "example-reserved-ip"                       # If `create_new_reserved_ip_for_stream_manager` = false then specify the name of already create reserved IP for stream manager in the provided region.
@@ -257,6 +270,7 @@ output "module_output" {
 * **SSL Certificates** - This Terraform Module can create or use existing SSL certificate for Load Balancer
 * **MySQL Database** - This Terraform Module create a MySQL databse server in Google Cloud.
 * **Stream Manager** - Instance will be created automatically for Stream Manager
+* **Terraform Server** - This will create a dedicated instance for Terrform Service
 * **Origin Node Image** - To create Google Cloud(Gcloud) custom image for Orgin Node type for Stream Manager node group
 * **Edge Node Image** - To create Google Cloud(Gcloud) custom image for Edge Node type for Stream Manager node group (optional)
 * **Transcoder Node Image** - To create Google Cloud(Gcloud) custom image for Transcoder Node type for Stream Manager node group (optional)
@@ -278,7 +292,8 @@ module "red5pro_autoscaling" {
   type                             = "autoscaling"                                         # Deployment type: single, cluster, autoscaling
   name                             = "red5pro-autoscaling"                                 # Name to be used on all the resources as identifier
   path_to_red5pro_build            = "./red5pro-server-0.0.0.b0-release.zip"               # Absolute path or relative path to Red5 Pro server ZIP file
-  path_to_google_cloud_controller  = "./google-cloud-controller-0.0.0.jar"                 # Absolute path or relative path to google cloud controller jar file
+  path_to_terraform_cloud_controller  = "./terraform-cloud-controller-0.0.0.jar"           # Absolute path or relative path to terraform cloud controller jar file
+  path_to_terraform_service_build     = "./terraform-service-0.0.0.zip"                    # Absolute path or relative path to terraform service ZIP file
 
   # SSH key configuration
   create_new_ssh_keys              = true                                                  # true - create new SSH key, false - use existing SSH key
@@ -308,7 +323,15 @@ module "red5pro_autoscaling" {
   stream_manager_server_boot_disk_type = "pd-ssd"                                          # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
   stream_manager_server_disk_size      = 10                                                # Stream Manager server boot size in GB
 
-# Load Balancer Configuration
+  # Terraform Service configuration
+  terraform_service_api_key         = "examplekey"                                         # Terraform service api key
+  terraform_service_parallelism     = "20"                                                 # Terraform service parallelism
+  terraform_service_boot_disk_type  = "pd-ssd"                                             # Boot disk type for Terraform server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  terraform_service_instance_type   = "n2-standard-2"                                      # Terraform service Instance type
+  gcp_node_boot_disk_type           = "pd-ssd"                                             # Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  gcp_node_network_tag              = "null"                                               # Specify Node Network tag which will be used by Terraform service while creating Node. Default value is null
+
+  # Load Balancer Configuration
   create_new_global_reserved_ip_for_lb = true                                              # True - Create a new reserved IP for Load Balancer, False - Use existing reserved IP for Load Balancer
   existing_global_lb_reserved_ip_name  = ""                                                # If `create_new_global_reserved_ip_for_lb` - False, Use the already created Load balancer IP address name
   lb_http_port_required                = "5080"                                            # The required HTTP port used by Load Balancer other than HTTPS, Default 5080

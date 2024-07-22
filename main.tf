@@ -9,9 +9,12 @@ locals {
   vpc_network_name                     = var.vpc_create ? google_compute_network.vpc_red5_network[0].name : data.google_compute_network.existing_vpc_network[0].name
   single_server_ip                     = local.single ? google_compute_instance.red5_single_server[0].network_interface.0.access_config.0.nat_ip : null
   cluster_or_autoscaling               = local.cluster || local.autoscaling ? true : false
-  mysql_local_enable                   = local.autoscaling ? false : local.cluster && var.mysql_database_create ? false : true
-  mysql_db_system_create               = local.autoscaling ? true : local.cluster && var.mysql_database_create ? true : false
-  mysql_host                           = local.autoscaling ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : local.cluster && var.mysql_database_create ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : "localhost"
+  mysql_local_enable                   = local.autoscaling ? false : local.cluster && var.mysql_database_create ? false : local.cluster && var.terraform_service_instance_create ? false : true
+  mysql_db_system_create               = local.autoscaling ? true : local.cluster && var.mysql_database_create ? true : local.cluster && var.terraform_service_instance_create ? true : false
+  mysql_host                           = local.autoscaling ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : local.cluster && var.mysql_database_create ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : local.cluster && var.terraform_service_instance_create ? google_sql_database_instance.mysql_database[0].ip_address.0.ip_address : "localhost"
+  terraform_service_ip                 = local.autoscaling ? google_compute_instance.red5pro_terraform_service[0].network_interface.0.access_config.0.nat_ip : local.cluster && var.terraform_service_instance_create ? google_compute_instance.red5pro_terraform_service[0].network_interface.0.access_config.0.nat_ip : "localhost"
+  terraform_service_local_enable       = local.autoscaling ? false : local.cluster && var.terraform_service_instance_create ? false : true
+  dedicated_terraform_service_create   = local.autoscaling ? true : local.cluster && var.terraform_service_instance_create ? true : false
   stream_manager_ip                    = local.autoscaling ? local.lb_ip_address : local.cluster ? local.sm_nat_ip : null
   lb_ssl_certificate                   = local.autoscaling && var.create_new_lb_ssl_cert && var.create_lb_with_ssl ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : local.cluster || local.single ? null : var.create_lb_with_ssl ? data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id : null
   lb_ip_address                        = local.autoscaling && var.create_new_global_reserved_ip_for_lb ? google_compute_global_address.lb_reserved_ip[0].address : local.autoscaling ? data.google_compute_global_address.existing_lb_reserved_ip[0].address : null
@@ -281,8 +284,13 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   }
 
   provisioner "file" {
-    source      = var.path_to_google_cloud_controller
-    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_google_cloud_controller)}"
+    source      = var.path_to_terraform_service_build
+    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_terraform_service_build)}"
+  }
+
+  provisioner "file" {
+    source      = var.path_to_terraform_cloud_controller
+    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_terraform_cloud_controller)}"
   }
 
   connection {
@@ -313,10 +321,20 @@ resource "google_compute_instance" "red5_stream_manager_server" {
       "export GOGOLE_PROJECT_ID='${local.google_cloud_project}'",
       "export GOOGLE_DEFAULT_ZONE_ID='${self.zone}'",
       "export GOOGLE_VPC_NETWORK_NAME='${local.vpc_network_name}'",
+      # For Terraform Service
+      "export TF_SVC_ENABLE='${local.terraform_service_local_enable}'",
+      "export TERRA_HOST='${local.terraform_service_ip}'",
+      "export TERRA_API_KEY='${var.terraform_service_api_key}'",
+      "export TERRA_PARALLELISM='${var.terraform_service_parallelism}'",
+      "export GCP_PROJECT_ID='${var.google_project_id}'",
+      "export GCP_VPC_NAME='${local.vpc_network_name}'",
+      "export GCP_NODE_DISK_TYPE='${var.gcp_node_boot_disk_type}'",
+      "export GCP_NODE_NETWORK_TAG='${var.gcp_node_network_tag}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_mysql_local.sh",
+      "sudo -E /home/ubuntu/red5pro-installer/r5p_install_terraform_svc.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_config_stream_manager.sh",
       "sudo systemctl daemon-reload && sudo systemctl start red5pro",
       "nohup sudo -E /home/ubuntu/red5pro-installer/r5p_ssl_check_install.sh >> /home/ubuntu/red5pro-installer/r5p_ssl_check_install.log &",
@@ -343,6 +361,105 @@ resource "google_compute_instance" "red5_stream_manager_server" {
 }
 
 ################################################################################
+# Terraform Service
+################################################################################
+resource "google_compute_instance" "red5pro_terraform_service" {
+  count        = local.dedicated_terraform_service_create ? 1 : 0
+  name         = "${var.name}-red5-terraform-service"
+  machine_type = var.terraform_service_instance_type
+  zone         = element(data.google_compute_zones.available_zone.names, count.index)
+  project      = local.google_cloud_project
+
+  boot_disk {
+    initialize_params {
+      image = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
+      type  = var.terraform_service_boot_disk_type
+    }
+  }
+
+  network_interface {
+    network = local.vpc_network_name
+    access_config {
+    }
+  }
+
+  metadata = {
+    ssh-keys = "ubuntu:${local.public_ssh_key}"
+  }
+
+  provisioner "file" {
+    source      = "${abspath(path.module)}/red5pro-installer"
+    destination = "/home/ubuntu/"
+  }
+
+  provisioner "file" {
+    source      = var.path_to_terraform_service_build
+    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_terraform_service_build)}"
+  }
+
+  provisioner "file" {
+    source      = var.path_to_terraform_cloud_controller
+    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_terraform_cloud_controller)}"
+  }
+
+  connection {
+    host        = self.network_interface.0.access_config.0.nat_ip
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = "${local.private_ssh_key}"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo cloud-init status --wait",
+      "sudo iptables -F",
+      "export TF_SVC_ENABLE=true",
+      "export TERRA_API_KEY='${var.terraform_service_api_key}'",
+      "export TERRA_PARALLELISM='${var.terraform_service_parallelism}'",
+      "export DB_HOST='${local.mysql_host}'",
+      "export DB_PORT='${var.mysql_port}'",
+      "export DB_USER='${var.mysql_username}'",
+      "export DB_PASSWORD='${nonsensitive(var.mysql_password)}'",
+      "export GCP_PROJECT_ID='${var.google_project_id}'",
+      "export GCP_VPC_NAME='${local.vpc_network_name}'",
+      "export GCP_NODE_DISK_TYPE='${var.gcp_node_boot_disk_type}'",
+      "export GCP_NODE_NETWORK_TAG='${var.gcp_node_network_tag}'",
+      "cd /home/ubuntu/red5pro-installer/",
+      "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
+      "sudo -E /home/ubuntu/red5pro-installer/r5p_install_terraform_svc.sh",
+      "sleep 2"
+    ]
+    connection {
+      host        = self.network_interface.0.access_config.0.nat_ip
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = "${local.private_ssh_key}"
+    }
+  }
+  service_account {
+    scopes = [ "cloud-platform" ]
+  }
+}
+
+resource "google_compute_firewall" "red5_terraform_service_firewall" {
+  count         = local.dedicated_terraform_service_create ? 1 : 0
+  name          = "${var.name}-terraform-service-firewall"
+  network       = local.vpc_network_name
+  priority      = 1000
+  allow {
+    protocol    = "icmp"
+  }
+
+  allow {
+    protocol    = "tcp"
+    ports       = var.red5_terraform_service_firewall_ports
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  project       = local.google_cloud_project
+}
+
+################################################################################
 # MySQL Database Configuration
 ################################################################################
 resource "google_sql_database_instance" "mysql_database" {
@@ -366,7 +483,7 @@ resource "google_sql_database_instance" "mysql_database" {
 
     ip_configuration {
       ipv4_enabled    = true
-      require_ssl     = false
+      ssl_mode        = "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
 
       authorized_networks {
         name          = "SM-Connection"

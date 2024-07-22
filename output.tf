@@ -91,3 +91,8 @@ output "load_balancer_url" {
   description = "Load Balancer HTTPS URL"
   value       = local.autoscaling && var.create_lb_with_ssl ? "https://${local.lb_ip_address}:443" : local.autoscaling ? "http://${local.lb_ip_address}:${local.sm_port}" : null
 }
+
+output "terraform_service_ip" {
+  description = "Terraform Service Host"
+  value       = local.terraform_service_ip
+}

@@ -68,3 +68,8 @@ output "stream_manager_https_url" {
   description = "Stream Manager HTTPS URL"
   value       = module.red5pro_cluster.stream_manager_https_url
 }
+
+output "terraform_service_ip" {
+  description = "Terraform Service Host"
+  value       = module.red5pro_cluster.terraform_service_ip
+}

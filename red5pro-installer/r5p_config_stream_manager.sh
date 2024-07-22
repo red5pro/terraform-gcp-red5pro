@@ -3,9 +3,8 @@
 # Red5 Pro Stream Manager Configuration Script
 ############################################################################################################
 
-# GOGOLE_PROJECT_ID
-# GOOGLE_DEFAULT_ZONE_ID
-# GOOGLE_VPC_NETWORK_NAME
+# TERRA_HOST
+# TERRA_API_KEY
 # DB_HOST
 # DB_PORT
 # DB_USER
@@ -37,16 +36,12 @@ log() {
 config_sm_properties_gcp(){
     log_i "Start configuration Stream Manager properties for Google Cloud"
     
-    if [ -z "$GOGOLE_PROJECT_ID" ]; then
-        log_w "Variable GOGOLE_PROJECT_ID is empty."
+    if [ -z "$TERRA_HOST" ]; then
+        log_w "Variable TERRA_HOST is empty."
         var_error=1
     fi
-    if [ -z "$GOOGLE_DEFAULT_ZONE_ID" ]; then
-        log_w "Variable GOOGLE_DEFAULT_ZONE_ID is empty."
-        var_error=1
-    fi
-    if [ -z "$GOOGLE_VPC_NETWORK_NAME" ]; then
-        log_w "Variable GOOGLE_VPC_NETWORK_NAME is empty."
+    if [ -z "$TERRA_API_KEY" ]; then
+        log_w "Variable TERRA_API_KEY is empty."
         var_error=1
     fi
     if [[ "$var_error" == "1" ]]; then
@@ -54,22 +49,22 @@ config_sm_properties_gcp(){
         exit 1
     fi
     
-    local google_project_id='#compute.project=.*'
-    local google_project_id_new="compute.project=${GOGOLE_PROJECT_ID}"
+    local terra_region_pattern='#terra.regionNames=.*'
+    local terra_region_new="terra.regionNames=us-west1, us-west2, us-west3, us-west4, us-south1, us-east5, us-east4, us-east1, us-central1, southamerica-west1, southamerica-east1, northamerica-northeast1, me-west1, me-central2, me-central1, europe-west9, europe-west8, europe-west6, europe-west4, europe-west3, europe-west2, europe-southwest1, europe-north1, europe-central2, asia-south1, asia-northeast3, asia-northeast2, asia-northeast1, asia-east2, asia-east1, africa-south1"
     
-    local google_default_zone_id='#compute.defaultzone=.*'
-    local google_default_zone_id_new="compute.defaultzone=${GOOGLE_DEFAULT_ZONE_ID}"
+    local terra_instance_name_pattern='#terra.instanceName=.*'
+    local terra_instance_name_new="terra.instanceName=gcp_instance"
     
-    local google_vpc_network_name='#compute.network=.*'
-    local google_vpc_network_name_new="compute.network=${GOOGLE_VPC_NETWORK_NAME}"
-
-    local google_default_disk="#compute.defaultdisk=.*"
-    local google_default_disk_new="compute.defaultdisk=pd-standard"
-
-    local google_timeout="#compute.operationTimeoutMilliseconds=.*"
-    local google_timeout_new="compute.operationTimeoutMilliseconds=200000"
-
-    sed -i -e "s|$google_project_id|$google_project_id_new|" -e "s|$google_default_zone_id|$google_default_zone_id_new|" -e "s|$google_vpc_network_name|$google_vpc_network_name_new|" -e "s|$google_default_disk|$google_default_disk_new|" -e "s|$google_timeout|$google_timeout_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/red5-web.properties"
+    local terra_host_pattern='#terra.host=.*'
+    local terra_host_new="terra.host=${TERRA_HOST}"
+    
+    local terra_port_pattern='#terra.port=.*'
+    local terra_port_new="terra.port=8083"
+    
+    local terra_token_pattern='#terra.token=.*'
+    local terra_token_new="terra.token=${TERRA_API_KEY}"
+    
+    sed -i -e "s|$terra_region_pattern|$terra_region_new|" -e "s|$terra_instance_name_pattern|$terra_instance_name_new|" -e "s|$terra_host_pattern|$terra_host_new|" -e "s|$terra_port_pattern|$terra_port_new|" -e "s|$terra_token_pattern|$terra_token_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/red5-web.properties"
         
 }
 
@@ -198,21 +193,21 @@ install_sm(){
 }
 
 config_sm_applicationContext(){
-    log_i "Set google-cloud-controller in $RED5_HOME/webapps/streammanager/WEB-INF/applicationContext.xml"
+    log_i "Set terraform-cloud-controller in $RED5_HOME/webapps/streammanager/WEB-INF/applicationContext.xml"
     
     local def_controller='<!-- Default CONTROLLER -->'
     local def_controller_new='<!-- Disabled: Default CONTROLLER --> <!--'
 
-    local google_controller='<!-- AWS CONTROLLER -->'
-    local google_controller_new='--> <!-- AWS CONTROLLER -->'
+    local terra_controller='<!-- AWS CONTROLLER -->'
+    local terra_controller_new='--> <!-- AWS CONTROLLER -->'
 
-    local google_controller_in='<!-- <bean id="apiBridge" class="com.red5pro.services.cloud.google.component.ComputeInstanceController"'
-    local google_controller_in_new='<bean id="apiBridge" class="com.red5pro.services.cloud.google.component.ComputeInstanceController"'
+    local terra_controller_in='<!-- <bean id="apiBridge" class="com.red5pro.services.terraform.component.TerraformCloudController"'
+    local terra_controller_in_new='<bean id="apiBridge" class="com.red5pro.services.terraform.component.TerraformCloudController"'
 
-    local google_controller_out='value="${compute.network}"/> </bean> -->'
-    local google_controller_out_new='value="${compute.network}"/> </bean>'
+    local terra_controller_out='/> <property name="terraToken" value="${terra.token}"/> </bean> -->'
+    local terra_controller_out_new='/> <property name="terraToken" value="${terra.token}"/> </bean>'
 
-    sed -i -e "s|$def_controller|$def_controller_new|" -e "s|$google_controller|$google_controller_new|" -e "s|$google_controller_in|$google_controller_in_new|" -e "s|$google_controller_out|$google_controller_out_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/applicationContext.xml"
+    sed -i -e "s|$def_controller|$def_controller_new|" -e "s|$terra_controller|$terra_controller_new|" -e "s|$terra_controller_in|$terra_controller_in_new|" -e "s|$terra_controller_out|$terra_controller_out_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/applicationContext.xml"
 }
 
 config_sm_cors(){

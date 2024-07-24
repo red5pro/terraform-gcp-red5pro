@@ -44,14 +44,16 @@ module "red5pro_autoscaling" {
   stream_manager_api_key               = "examplekey"                                      # Stream Manager api key
   stream_manager_server_boot_disk_type = "pd-ssd"                                          # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
   stream_manager_server_disk_size      = 10                                                # Stream Manager server boot size in GB
+  stream_manager_network_tag           = "example-sm-instance"                             # Specify the Network Tag for Stream Manager to be used by the Virtual Network firewall
 
   # Terraform Service configuration
   terraform_service_api_key         = "examplekey"                                         # Terraform service api key
   terraform_service_parallelism     = "20"                                                 # Terraform service parallelism
+  terraform_service_network_tag     = "example-terraform-service-instance"                 # Specify the Network Tag for Terraform Service instance to be used by the Virtual Network firewall
   terraform_service_boot_disk_type  = "pd-ssd"                                             # Boot disk type for Terraform server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
   terraform_service_instance_type   = "n2-standard-2"                                      # Terraform service Instance type
   gcp_node_boot_disk_type           = "pd-ssd"                                             # Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
-  gcp_node_network_tag              = "null"                                               # Specify Node Network tag which will be used by Terraform service while creating Node. Default value is null
+  gcp_node_network_tag              = "example-node-instance"                              # Specify new/existing Node Network tag which will be used by Terraform service while creating Node and it will be utilized by Firewall in GCP. Default value is null
 
   # Load Balancer Configuration
   create_new_global_reserved_ip_for_lb = true                                              # True - Create a new reserved IP for Load Balancer, False - Use existing reserved IP for Load Balancer

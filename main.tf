@@ -98,6 +98,7 @@ resource "google_compute_firewall" "red5_single_firewall" {
 
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
+  target_tags   = tolist([var.single_server_network_tag])
 }
 
 resource "google_compute_firewall" "red5_single_ssh_firewall" {
@@ -197,6 +198,7 @@ resource "google_compute_instance" "red5_single_server" {
       private_key = "${local.private_ssh_key}"
     }
   }
+  tags            = tolist([var.single_server_network_tag])
 }
 
 ################################################################################
@@ -220,6 +222,7 @@ resource "google_compute_firewall" "red5_stream_manager_firewall" {
   }
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
+  target_tags   = tolist([var.stream_manager_network_tag])
 }
 
 # Reserved IP address for Stream Manager
@@ -350,6 +353,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   service_account {
     scopes = [ "cloud-platform" ]
   }
+  tags             = tolist([var.stream_manager_network_tag])
   lifecycle {
     ignore_changes = all
     precondition {
@@ -439,6 +443,7 @@ resource "google_compute_instance" "red5pro_terraform_service" {
   service_account {
     scopes = [ "cloud-platform" ]
   }
+  tags     = tolist([var.terraform_service_network_tag])
 }
 
 resource "google_compute_firewall" "red5_terraform_service_firewall" {
@@ -457,6 +462,7 @@ resource "google_compute_firewall" "red5_terraform_service_firewall" {
 
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
+  target_tags   = tolist([var.terraform_service_network_tag])
 }
 
 ################################################################################
@@ -552,7 +558,7 @@ resource "google_compute_instance_template" "stream_manager_template" {
   count               = local.autoscaling ? 1 : 0
   name                = "${var.name}-stream-manager"
   machine_type        = var.stream_manager_server_instance_type
-  tags                = ["${var.name}-sm-template"]
+  tags                = tolist([var.stream_manager_network_tag])
   project             = local.google_cloud_project
   metadata = {
     ssh-keys          = "ubuntu:${local.public_ssh_key}"
@@ -713,6 +719,7 @@ resource "google_compute_firewall" "red5_node_firewall" {
   }
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
+  target_tags   = var.gcp_node_network_tag != "null" ? tolist([var.gcp_node_network_tag]) : []
 }
 
 # Red5 Pro Origin server instance
@@ -801,6 +808,7 @@ resource "google_compute_instance" "red5_origin_server" {
   lifecycle {
     ignore_changes = all
   }
+  tags       = tolist([var.gcp_node_network_tag])
   depends_on = [ google_compute_instance.red5_stream_manager_server ]
 }
 
@@ -885,6 +893,7 @@ resource "google_compute_instance" "red5_edge_server" {
   lifecycle {
     ignore_changes = all
   }
+  tags             = tolist([var.gcp_node_network_tag])
 }
 
 # Red5 Pro Transcoder server instance
@@ -973,6 +982,7 @@ resource "google_compute_instance" "red5_transcoder_server" {
   lifecycle {
     ignore_changes = all
   }
+  tags             = tolist([var.gcp_node_network_tag])
 }
 
 # Red5 Pro Relay server instance
@@ -1056,6 +1066,7 @@ resource "google_compute_instance" "red5_relay_server" {
   lifecycle {
     ignore_changes = all
   }
+  tags             = tolist([var.gcp_node_network_tag])
 }
 
 #################################################################################################

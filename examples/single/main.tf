@@ -35,6 +35,7 @@ module "red5pro_single" {
   # Single Red5 Pro server Instance configuration
   single_server_instance_type                   = "n2-standard-2"                            # Instance type for Red5 Pro server
   single_server_boot_disk_type                  = "pd-ssd"                                   # Boot disk type for Single server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  single_server_network_tag                     = "example-single-server-instance"           # Specify the Network Tag for Red5 Single Server instance to be used by the Virtual Network firewall
 
   # Red5Pro server configuration
   red5pro_license_key                           = "1111-2222-3333-4444"                      # Red5 Pro license key (https://account.red5.net/login)

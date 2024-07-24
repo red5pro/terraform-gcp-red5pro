@@ -903,3 +903,18 @@ variable "gcp_node_boot_disk_type" {
   type        = string
   default     = ""
 }
+variable "stream_manager_network_tag" {
+  description = "Specify the Network Tag for Stream Manager to be used by the Virtual Network firewall"
+  type        = string
+  default     = ""
+}
+variable "terraform_service_network_tag" {
+  description = "Specify the Network Tag for Terraform Service instance to be used by the Virtual Network firewall"
+  type        = string
+  default     = ""
+}
+variable "single_server_network_tag" {
+  description = "Specify the Network Tag for Red5 Single Server instance to be used by the Virtual Network firewall"
+  type        = string
+  default     = ""
+}

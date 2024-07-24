@@ -333,8 +333,14 @@ variable "red5pro_cluster_key" {
   default     = ""
 }
 
-variable "path_to_google_cloud_controller" {
-  description = "Path to the google cloud controller file, absolute path or relative path. https://account.red5pro.com/downloads. Example: /home/ubuntu/google-cloud-controller-0.0.0.jar"
+variable "path_to_terraform_cloud_controller" {
+  description = "Path to the terraform cloud controller file, absolute path or relative path. https://account.red5pro.com/downloads. Example: /home/ubuntu/terraform-cloud-controller-0.0.0.jar"
+  type        = string
+  default     = ""
+}
+
+variable "path_to_terraform_service_build" {
+  description = "Path to the Terraform Service build zip file, absolute path or relative path. https://account.red5pro.com/downloads. Example: /home/ubuntu/terraform-gcp-red5pro/terraform-service-0.0.0.zip"
   type        = string
   default     = ""
 }
@@ -854,4 +860,61 @@ variable "node_group_relays_capacity" {
   description = "Connections capacity for Relays"
   type        = number
   default     = 30
+}
+
+# Red5 Pro Terraform Service properties
+variable "terraform_service_instance_create" {
+  description = "Create a dedicated GCP instance for Red5 pro Terraform Service "
+  type        = bool
+  default     = false
+}
+variable "terraform_service_api_key" {
+  description = "API key for Teraform Service to autherize the APIs"
+  type        = string
+  default     = ""
+}
+variable "terraform_service_parallelism" {
+  description = "Number of Terraform concurrent operations and used for non-standard rate limiting"
+  type        = string
+  default     = "20"
+}
+variable "terraform_service_instance_type" {
+  description = "Red5 Pro Stream Manager server instance type"
+  type        = string
+  default     = "n2-standard-2"
+}
+variable "terraform_service_boot_disk_type" {
+  description = "Boot disk type for Terraform server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`"
+  type        = string
+  default     = ""
+}
+variable "red5_terraform_service_firewall_ports" {
+  description = "The required port open for the Terraform server in Google cloud firewall"
+  type        = list(string)
+  default     = ["8083", "22"]
+}
+variable "gcp_node_network_tag" {
+  description = "Specify Node Network tag which will be used by Terraform service while creating Node. Default value is null"
+  type        = string
+  default     = "null"
+}
+variable "gcp_node_boot_disk_type" {
+  description = "Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`"
+  type        = string
+  default     = ""
+}
+variable "stream_manager_network_tag" {
+  description = "Specify the Network Tag for Stream Manager to be used by the Virtual Network firewall"
+  type        = string
+  default     = ""
+}
+variable "terraform_service_network_tag" {
+  description = "Specify the Network Tag for Terraform Service instance to be used by the Virtual Network firewall"
+  type        = string
+  default     = ""
+}
+variable "single_server_network_tag" {
+  description = "Specify the Network Tag for Red5 Single Server instance to be used by the Virtual Network firewall"
+  type        = string
+  default     = ""
 }

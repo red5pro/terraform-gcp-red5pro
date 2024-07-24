@@ -7,6 +7,7 @@
 * **SSL Certificates** - User can install Let's encrypt SSL certificates or use Red5Pro server without SSL certificate (HTTP only).
 * **MySQL Database** - Users have flexibility to create a MySQL databse server in Google Cloud or install it locally on the Stream Manager
 * **Stream Manager** - Instance will be created automatically for Stream Manager
+* **Terraform Server** - Uesrs can choose to create a dedicated instance for Terraform Server or install it locally on the Stream Manager
 * **Origin Node Image** - To create Google Cloud(Gcloud) custom image for Orgin Node type for Stream Manager node group
 * **Edge Node Image** - To create Google Cloud(Gcloud) custom image for Edge Node type for Stream Manager node group (optional)
 * **Transcoder Node Image** - To create Google Cloud(Gcloud) custom image for Transcoder Node type for Stream Manager node group (optional)
@@ -16,7 +17,8 @@ Example:
 
 ```bash
 cp ~/Downloads/red5pro-server-0.0.0.b0-release.zip ./
-cp ~/Downloads/google-cloud-controller-0.0.0.jar ./
+cp ~/Downloads/terraform-cloud-controller-0.0.0.jar ./
+cp ~/Downloads/terraform-service-0.0.0.zip ./
 ```
 
 ## Usage
@@ -79,4 +81,5 @@ No inputs.
 | <a name="output_stream_manager_http_url"></a> [stream\_manager\_http\_url](#output\_stream\_manager\_http\_url) | Stream Manager HTTP URL |
 | <a name="output_stream_manager_https_url"></a> [stream\_manager\_https\_url](#output\_stream\_manager\_https\_url) | Stream Manager HTTPS URL |
 | <a name="output_stream_manager_ip"></a> [stream\_manager\_ip](#output\_stream\_manager\_ip) | Stream Manager IP |
+| <a name="output_terraform_service_ip"></a> [terraform\_service\_ip](#output\_terraform\_service\_ip) | Terraform Service Host |
 | <a name="output_vpc_netwrok_name"></a> [vpc\_netwrok\_name](#output\_vpc\_netwrok\_name) | VPC Network name used in Google Cloud |

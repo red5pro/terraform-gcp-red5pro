@@ -73,3 +73,8 @@ output "load_balancer_url" {
   description = "Load Balancer HTTPS URL"
   value       = module.red5pro_autoscaling.load_balancer_url
 }
+
+output "terraform_service_ip" {
+  description = "Terraform Service Host"
+  value       = module.red5pro_autoscaling.terraform_service_ip
+}

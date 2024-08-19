@@ -98,13 +98,12 @@ check_stream_manager(){
 
     if [ -z "$SM_PORT" ]; then
         log_e "Parameter SM_PORT is empty, EXIT"
-        exit 1
     fi
     
     SM_STATUS_URL="http://$SM_IP:$SM_PORT/streammanager/api/4.0/admin/debug/cloudcontroller?accessToken=$SM_API_KEY"
 
     for i in {1..20}; do
-        curl -s -m 5 -o /dev/null -w "%{http_code}" curl "$SM_STATUS_URL" > /dev/null
+        curl -s -m 5 -o /dev/null -w "%{http_code}" "$SM_STATUS_URL" > /dev/null
         if [ $? -eq 0 ]; then
             code_resp=$(curl -s -o /dev/null -w "%{http_code}" "$SM_STATUS_URL")
             if [ "$code_resp" -eq 200 ]; then
@@ -188,10 +187,10 @@ add_origin_to_node_group(){
     fi
 }
 
+
 check_node_group(){
-    
     log_i "Checking states of nodes in new node group."
-    sleep 30
+    
     NODES_URL="http://$SM_IP:$SM_PORT/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node?accessToken=$SM_API_KEY"
     
     for i in {1..15};
@@ -200,6 +199,12 @@ check_node_group(){
         echo "$resp" |jq -r '.[] | [.identifier, .role, .state] | join(" ")' > temp.txt
         
         nodes=$(awk '{print $1}' < temp.txt)
+
+        if [[ -z "$nodes" ]]; then
+            log_w "Nodes list is empty. Node group was not created."            
+            log_e "Something wrong with Stream Manager. Please try to create node group manually using API. EXIT..."
+        fi
+
         node_bad_state=0
         
         for index in $nodes
@@ -222,7 +227,7 @@ check_node_group(){
             break
         fi
         if [[ $i -eq 15 ]]; then
-            log_e "Something wrong with nodes states. (Google Cloud service can't deploy nodes or nodes can't connect to SM). EXIT..."
+            log_e "Something wrong with nodes states. (Terraform service can't deploy nodes or nodes can't connect to SM). EXIT..."
         fi
         sleep 30
     done

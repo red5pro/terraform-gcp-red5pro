@@ -42,7 +42,7 @@ This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/d
       * Copy the `authorization code` from the browser and specify in the CLI prompt. After the successful login you will see your google cloud email detail and your cuurent project information
     * To change the current project in CLI use the below command to set the different project in CLI
       * To set different project use command `gcloud config set project PROJECT_ID`. 
-* Copy Red5 Pro server build and Google Cloud controller to the root folder of your project
+* Copy Red5 Pro server build and Terraform Cloud controller to the root folder of your project
 
 Example:  
 

@@ -40,20 +40,23 @@ module "red5pro_autoscaling" {
   red5pro_api_key                  = "examplekey"                                          # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
   
   # Red5 Pro Server Instance configuration
-  stream_manager_server_instance_type  = "n2-standard-2"                                   # Instance type for Red5 Pro stream manager server
-  stream_manager_api_key               = "examplekey"                                      # Stream Manager api key
-  stream_manager_server_boot_disk_type = "pd-ssd"                                          # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
-  stream_manager_server_disk_size      = 10                                                # Stream Manager server boot size in GB
-  stream_manager_network_tag           = "example-sm-instance"                             # Specify the Network Tag for Stream Manager to be used by the Virtual Network firewall
+  stream_manager_server_instance_type        = "n2-standard-2"                             # Instance type for Red5 Pro stream manager server
+  stream_manager_api_key                     = "examplekey"                                # Stream Manager api key
+  stream_manager_server_boot_disk_type       = "pd-ssd"                                    # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  stream_manager_server_disk_size            = 10                                          # Stream Manager server boot size in GB
+  stream_manager_create_new_firewall         = true                                        # True - Create a new firewall in VPC, False - Use existing firewall of VPC using network tag
+  new_or_existing_stream_manager_network_tag = "example-sm-instance"                       # Specify the new or existing Network Tag for Stream Manager to be used by the Virtual Network firewall. If `vpc_create = true` specify new network tag, if `vpc_create = false` specify existing network tag for stream manager
 
   # Terraform Service configuration
-  terraform_service_api_key         = "examplekey"                                         # Terraform service api key
-  terraform_service_parallelism     = "20"                                                 # Terraform service parallelism
-  terraform_service_network_tag     = "example-terraform-service-instance"                 # Specify the Network Tag for Terraform Service instance to be used by the Virtual Network firewall
-  terraform_service_boot_disk_type  = "pd-ssd"                                             # Boot disk type for Terraform server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
-  terraform_service_instance_type   = "n2-standard-2"                                      # Terraform service Instance type
-  gcp_node_boot_disk_type           = "pd-ssd"                                             # Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
-  gcp_node_network_tag              = "example-node-instance"                              # Specify new/existing Node Network tag which will be used by Terraform service while creating Node and it will be utilized by Firewall in GCP. Default value is null
+  terraform_service_api_key                     = "examplekey"                             # Terraform service api key
+  terraform_service_parallelism                 = "20"                                     # Terraform service parallelism
+  terraform_service_create_new_firewall         = true                                     # True - Create a new firewall for Terraform service in VPC, False - Use existing firewall of VPC using network tag
+  new_or_existing_terraform_service_network_tag = "example-terraform-service-instance"     # Specify the new or existing Network Tag for Terraform Service to be used by the Virtual Network firewall. If `vpc_create = true` specify new network tag, if `vpc_create = false` specify existing network tag for Terraform Service
+  terraform_service_boot_disk_type              = "pd-ssd"                                 # Boot disk type for Terraform server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  terraform_service_instance_type               = "n2-standard-2"                          # Terraform service Instance type
+  red5_node_create_new_firewall                 = true                                     # # True - Create a new firewall for Red5 Node in VPC, False - Use existing firewall of VPC using network tag
+  red5_gcp_node_boot_disk_type                  = "pd-ssd"                                 # Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  red5_gcp_node_network_tag                     = "example-node-instance"                  # Specify new/existing Node Network tag which will be used by Terraform service while creating Node and it will be utilized by Firewall in GCP. If `vpc_create = true` specify new network tag for red5 node, if `vpc_create = false` specify existing network tag for red5 node
 
   # Load Balancer Configuration
   create_new_global_reserved_ip_for_lb = true                                              # True - Create a new reserved IP for Load Balancer, False - Use existing reserved IP for Load Balancer

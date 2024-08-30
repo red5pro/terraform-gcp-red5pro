@@ -893,28 +893,48 @@ variable "red5_terraform_service_firewall_ports" {
   type        = list(string)
   default     = ["8083", "22"]
 }
-variable "gcp_node_network_tag" {
+variable "red5_gcp_node_network_tag" {
   description = "Specify Node Network tag which will be used by Terraform service while creating Node. Default value is null"
   type        = string
   default     = "null"
 }
-variable "gcp_node_boot_disk_type" {
+variable "red5_gcp_node_boot_disk_type" {
   description = "Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`"
   type        = string
   default     = ""
 }
-variable "stream_manager_network_tag" {
+variable "new_or_existing_stream_manager_network_tag" {
   description = "Specify the Network Tag for Stream Manager to be used by the Virtual Network firewall"
   type        = string
   default     = ""
 }
-variable "terraform_service_network_tag" {
-  description = "Specify the Network Tag for Terraform Service instance to be used by the Virtual Network firewall"
+variable "new_or_existing_terraform_service_network_tag" {
+  description = "Specify the new or existing network Tag for Terraform Service instance to be used by the Virtual Network firewall"
   type        = string
   default     = ""
 }
-variable "single_server_network_tag" {
-  description = "Specify the Network Tag for Red5 Single Server instance to be used by the Virtual Network firewall"
+variable "new_or_existing_single_server_network_tag" {
+  description = "Specify the new or existing network Tag for Red5 Single Server instance to be used by the Virtual Network firewall"
   type        = string
   default     = ""
+}
+variable "single_server_create_new_firewall" {
+  description = "Create a new firewall for Red5 Single server"
+  type        = bool
+  default     = true
+}
+variable "stream_manager_create_new_firewall" {
+  description = "Create a new firewall for Red5 Stream Manager"
+  type        = bool
+  default     = true
+}
+variable "terraform_service_create_new_firewall" {
+  description = "Create a new firewall for Red5 Terraform Service"
+  type        = bool
+  default     = true
+}
+variable "red5_node_create_new_firewall" {
+  description = "Create a new firewall for Red5 Terraform Service"
+  type        = bool
+  default     = true
 }

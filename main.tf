@@ -21,10 +21,10 @@ locals {
   create_sm_reserved_ip                = local.cluster && var.create_new_reserved_ip_for_stream_manager ? true : false
   sm_nat_ip                            = local.create_sm_reserved_ip ? google_compute_address.sm_reserved_ip[0].address : local.cluster ? data.google_compute_address.existing_sm_reserved_ip[0].address : null
   sm_port                              = local.autoscaling ? var.lb_http_port_required : "5080"
-  single_server_firewall               = local.single ? var.vpc_create ? true : var.single_server_create_new_firewall ? true : false : false
-  stream_manager_firewall              = local.cluster_or_autoscaling ? var.vpc_create ? true : var.stream_manager_create_new_firewall ? true : false : false
-  terraform_service_firewall           = local.cluster_or_autoscaling ? var.vpc_create ? true : var.terraform_service_create_new_firewall ? true : false : false
-  red5_node_firewall                   = local.cluster_or_autoscaling ? var.vpc_create ? true : var.red5_node_create_new_firewall ? true : false : false
+  single_server_firewall               = local.single ? var.vpc_create ? true : var.create_new_firewall_for_single_server ? true : false : false
+  stream_manager_firewall              = local.cluster_or_autoscaling ? var.vpc_create ? true : var.create_new_firewall_for_stream_manager ? true : false : false
+  terraform_service_firewall           = local.cluster_or_autoscaling ? var.vpc_create ? true : var.create_new_firewall_for_terraform_service ? true : false : false
+  red5_node_firewall                   = local.cluster_or_autoscaling ? var.vpc_create ? true : var.create_new_firewall_for_nodes ? true : false : false
 }
 
 ################################################################################
@@ -102,7 +102,7 @@ resource "google_compute_firewall" "red5_single_firewall" {
 
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
-  target_tags   = tolist([var.new_or_existing_single_server_network_tag])
+  target_tags   = tolist([var.new_or_existing_network_tag_for_single_server])
 }
 
 resource "google_compute_firewall" "red5_single_ssh_firewall" {
@@ -116,7 +116,7 @@ resource "google_compute_firewall" "red5_single_ssh_firewall" {
   }
   source_ranges = var.red5_single_ssh_connection_source_ranges
   project       = local.google_cloud_project
-  target_tags   = tolist([var.new_or_existing_single_server_network_tag])
+  target_tags   = tolist([var.new_or_existing_network_tag_for_single_server])
 }
 
 # Red5 Pro single server instance
@@ -203,7 +203,7 @@ resource "google_compute_instance" "red5_single_server" {
       private_key = "${local.private_ssh_key}"
     }
   }
-  tags            = tolist([var.new_or_existing_single_server_network_tag])
+  tags            = tolist([var.new_or_existing_network_tag_for_single_server])
 }
 
 ################################################################################
@@ -227,7 +227,7 @@ resource "google_compute_firewall" "red5_stream_manager_firewall" {
   }
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
-  target_tags   = tolist([var.new_or_existing_stream_manager_network_tag])
+  target_tags   = tolist([var.new_or_existing_network_tag_for_stream_manager])
 }
 
 # Reserved IP address for Stream Manager
@@ -336,8 +336,8 @@ resource "google_compute_instance" "red5_stream_manager_server" {
       "export TERRA_PARALLELISM='${var.terraform_service_parallelism}'",
       "export GCP_PROJECT_ID='${var.google_project_id}'",
       "export GCP_VPC_NAME='${local.vpc_network_name}'",
-      "export GCP_NODE_DISK_TYPE='${var.red5_gcp_node_boot_disk_type}'",
-      "export GCP_NODE_NETWORK_TAG='${var.red5_gcp_node_network_tag}'",
+      "export GCP_NODE_DISK_TYPE='${var.terraform_service_boot_disk_type_for_nodes}'",
+      "export GCP_NODE_NETWORK_TAG='${var.new_or_existing_network_tag_for_nodes}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
@@ -358,7 +358,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   service_account {
     scopes = [ "cloud-platform" ]
   }
-  tags             = tolist([var.new_or_existing_stream_manager_network_tag])
+  tags             = tolist([var.new_or_existing_network_tag_for_stream_manager])
   lifecycle {
     ignore_changes = all
     precondition {
@@ -431,8 +431,8 @@ resource "google_compute_instance" "red5pro_terraform_service" {
       "export DB_PASSWORD='${nonsensitive(var.mysql_password)}'",
       "export GCP_PROJECT_ID='${var.google_project_id}'",
       "export GCP_VPC_NAME='${local.vpc_network_name}'",
-      "export GCP_NODE_DISK_TYPE='${var.red5_gcp_node_boot_disk_type}'",
-      "export GCP_NODE_NETWORK_TAG='${var.red5_gcp_node_network_tag}'",
+      "export GCP_NODE_DISK_TYPE='${var.terraform_service_boot_disk_type_for_nodes}'",
+      "export GCP_NODE_NETWORK_TAG='${var.new_or_existing_network_tag_for_nodes}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_terraform_svc.sh",
@@ -448,7 +448,7 @@ resource "google_compute_instance" "red5pro_terraform_service" {
   service_account {
     scopes = [ "cloud-platform" ]
   }
-  tags     = tolist([var.new_or_existing_terraform_service_network_tag])
+  tags     = tolist([var.new_or_existing_network_tag_for_terraform_service])
 }
 
 resource "google_compute_firewall" "red5_terraform_service_firewall" {
@@ -462,12 +462,12 @@ resource "google_compute_firewall" "red5_terraform_service_firewall" {
 
   allow {
     protocol    = "tcp"
-    ports       = var.red5_terraform_service_firewall_ports
+    ports       = var.terraform_service_firewall_ports
   }
 
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
-  target_tags   = tolist([var.new_or_existing_terraform_service_network_tag])
+  target_tags   = tolist([var.new_or_existing_network_tag_for_terraform_service])
 }
 
 ################################################################################
@@ -563,7 +563,7 @@ resource "google_compute_instance_template" "stream_manager_template" {
   count               = local.autoscaling ? 1 : 0
   name                = "${var.name}-stream-manager"
   machine_type        = var.stream_manager_server_instance_type
-  tags                = tolist([var.new_or_existing_stream_manager_network_tag])
+  tags                = tolist([var.new_or_existing_network_tag_for_stream_manager])
   project             = local.google_cloud_project
   metadata = {
     ssh-keys          = "ubuntu:${local.public_ssh_key}"
@@ -724,7 +724,7 @@ resource "google_compute_firewall" "red5_node_firewall" {
   }
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
-  target_tags   = var.red5_gcp_node_network_tag != "null" ? tolist([var.red5_gcp_node_network_tag]) : []
+  target_tags   = var.new_or_existing_network_tag_for_nodes != "null" ? tolist([var.new_or_existing_network_tag_for_nodes]) : []
 }
 
 # Red5 Pro Origin server instance
@@ -813,7 +813,7 @@ resource "google_compute_instance" "red5_origin_server" {
   lifecycle {
     ignore_changes = all
   }
-  tags       = tolist([var.red5_gcp_node_network_tag])
+  tags       = tolist([var.new_or_existing_network_tag_for_nodes])
   depends_on = [ google_compute_instance.red5_stream_manager_server ]
 }
 
@@ -898,7 +898,7 @@ resource "google_compute_instance" "red5_edge_server" {
   lifecycle {
     ignore_changes = all
   }
-  tags             = tolist([var.red5_gcp_node_network_tag])
+  tags             = tolist([var.new_or_existing_network_tag_for_nodes])
 }
 
 # Red5 Pro Transcoder server instance
@@ -987,7 +987,7 @@ resource "google_compute_instance" "red5_transcoder_server" {
   lifecycle {
     ignore_changes = all
   }
-  tags             = tolist([var.red5_gcp_node_network_tag])
+  tags             = tolist([var.new_or_existing_network_tag_for_nodes])
 }
 
 # Red5 Pro Relay server instance
@@ -1071,7 +1071,7 @@ resource "google_compute_instance" "red5_relay_server" {
   lifecycle {
     ignore_changes = all
   }
-  tags             = tolist([var.red5_gcp_node_network_tag])
+  tags             = tolist([var.new_or_existing_network_tag_for_nodes])
 }
 
 #################################################################################################

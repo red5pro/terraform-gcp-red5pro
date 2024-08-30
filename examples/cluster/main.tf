@@ -24,8 +24,14 @@ module "red5pro_cluster" {
   existing_private_ssh_key_path    = "./example-ssh-key.pem"                               # if `create_new_ssh_keys` = false, Path to existing SSH private key
   
   # VPC configuration
-  vpc_create                       = true                                                  # True - Create a new VPC in Google Cloud, False - Use existing VPC
-  existing_vpc_network_name        = "example-vpc-name"                                    # if `vpc_create` = false, Existing VPC name used for the network configuration
+  vpc_create                                        = true                                 # True - Create a new VPC in Google Cloud, False - Use existing VPC
+  existing_vpc_network_name                         = "example-vpc-name"                   # if `vpc_create` = false, Existing VPC name used for the network configuration
+  create_new_firewall_for_terraform_service         = true                                 # True - Create a new firewall for Terraform service in VPC, False - Use existing firewall of VPC using network tag
+  create_new_firewall_for_stream_manager            = true                                 # True - Create a new firewall in VPC, False - Use existing firewall of VPC using network tag
+  create_new_firewall_for_nodes                     = true                                 # True - Create a new firewall for Red5 Node in VPC, False - Use existing firewall of VPC using network tag
+  new_or_existing_network_tag_for_terraform_service = "example-terraform-service-instance" # Specify the new or existing Network Tag for Terraform Service to be used by the Virtual Network firewall. If `vpc_create = true` specify new network tag, if `vpc_create = false` specify existing network tag for Terraform Service
+  new_or_existing_network_tag_for_stream_manager    = "example-sm-instance"                # Specify the new or existing Network Tag for Stream Manager to be used by the Virtual Network firewall. If `vpc_create = true` specify new network tag, if `vpc_create = false` specify existing network tag for stream manager
+  new_or_existing_network_tag_for_nodes             = "example-node-instance"              # Specify new/existing Node Network tag which will be used by Terraform service while creating Node and it will be utilized by Firewall in GCP. If `vpc_create = true` specify new network tag for red5 node, if `vpc_create = false` specify existing network tag for red5 node
 
   # Database Configuration
   mysql_database_create            = false                                                 # true - create a new database false- Install locally
@@ -49,14 +55,10 @@ module "red5pro_cluster" {
   # Terraform Service configuration
   terraform_service_instance_create             = false                                    # true - Create a dedicate terraform service instance, false - install terraform service locally on the stream manager
   terraform_service_api_key                     = "examplekey"                             # Terraform service api key
-  terraform_service_create_new_firewall         = true                                     # True - Create a new firewall for Terraform service in VPC, False - Use existing firewall of VPC using network tag
-  new_or_existing_terraform_service_network_tag = "example-terraform-service-instance"     # Specify the new or existing Network Tag for Terraform Service to be used by the Virtual Network firewall. If `vpc_create = true` specify new network tag, if `vpc_create = false` specify existing network tag for Terraform Service
   terraform_service_parallelism                 = "20"                                     # Terraform service parallelism
   terraform_service_boot_disk_type              = "pd-ssd"                                 # Boot disk type for Terraform server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
   terraform_service_instance_type               = "n2-standard-2"                          # Terraform service Instance type
-  red5_node_create_new_firewall                 = true                                     # # True - Create a new firewall for Red5 Node in VPC, False - Use existing firewall of VPC using network tag
-  red5_gcp_node_boot_disk_type                  = "pd-ssd"                                 # Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
-  red5_gcp_node_network_tag                     = "example-node-instance"                  # Specify new/existing Node Network tag which will be used by Terraform service while creating Node and it will be utilized by Firewall in GCP. If `vpc_create = true` specify new network tag for red5 node, if `vpc_create = false` specify existing network tag for red5 node
+  terraform_service_boot_disk_type_for_nodes    = "pd-ssd"                                 # Boot disk type for Nodes in Terraform Service. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
 
   # Red5 Pro server Instance configuration
   create_new_reserved_ip_for_stream_manager  = true                                        # True - Create a new reserved IP for stream manager, False - Use already created reserved IP address
@@ -65,8 +67,6 @@ module "red5pro_cluster" {
   stream_manager_api_key                     = "examplekey"                                # Stream Manager api key
   stream_manager_server_boot_disk_type       = "pd-ssd"                                    # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
   stream_manager_server_disk_size            = 50                                          # Stream Manager server boot size in GB
-  stream_manager_create_new_firewall         = true                                        # True - Create a new firewall in VPC, False - Use existing firewall of VPC using network tag
-  new_or_existing_stream_manager_network_tag = "example-sm-instance"                       # Specify the new or existing Network Tag for Stream Manager to be used by the Virtual Network firewall. If `vpc_create = true` specify new network tag, if `vpc_create = false` specify existing network tag for stream manager
 
   # Red5 Pro cluster Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image

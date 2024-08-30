@@ -22,11 +22,11 @@ module "red5pro_single" {
   existing_private_ssh_key_path    = "./example-ssh-key.pem"                                 # if `create_new_ssh_keys` = false, Path to existing SSH private key
 
   # VPC configuration
-  vpc_create                                = true                                           # True - Create a new VPC in Google Cloud, False - Use existing VPC
-  existing_vpc_network_name                 = "example-vpc-name"                             # if `vpc_create` = false, Existing VPC name used for the network configuration in Google Cloud
-  red5_single_ssh_connection_source_ranges  = ["YOUR-PUBLIC-IP/32", "1.2.3.4/32"]            # List of IP address ranges to provide SSH connection with red5 server. Kindly provide your public IP to make SSH connection while running this terraform module
-  single_server_create_new_firewall         = true                                           # True - Create a new firewall for Red5 Single server, False - Use existing firewall rule using network tag
-  new_or_existing_single_server_network_tag = "example-single-server-instance"               # Specify the Network Tag for Red5 Single Server instance to be used by the Virtual Network firewall. If `vpc_create = true` specify new network tag for single server, if `vpc_create = false` specify existing network tag for single server
+  vpc_create                                    = true                                       # True - Create a new VPC in Google Cloud, False - Use existing VPC
+  existing_vpc_network_name                     = "example-vpc-name"                         # if `vpc_create` = false, Existing VPC name used for the network configuration in Google Cloud
+  red5_single_ssh_connection_source_ranges      = ["YOUR-PUBLIC-IP/32", "1.2.3.4/32"]        # List of IP address ranges to provide SSH connection with red5 server. Kindly provide your public IP to make SSH connection while running this terraform module
+  create_new_firewall_for_single_server         = true                                       # True - Create a new firewall for Red5 Single server, False - Use existing firewall rule using network tag
+  new_or_existing_network_tag_for_single_server = "example-single-server-instance"           # Specify the Network Tag for Red5 Single Server instance to be used by the Virtual Network firewall. If `vpc_create = true` specify new network tag for single server, if `vpc_create = false` specify existing network tag for single server
 
   # Single Red5 Pro server HTTPS/SSL certificate configuration
   https_letsencrypt_enable                   = false                                         # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate

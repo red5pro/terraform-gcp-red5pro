@@ -4,21 +4,16 @@
 * **SSH Keys** -This terraform module can create a new SSH keys or use the already created SSH keys.
 * **Firewall** - This Terrform module create a new firewall for Stream Manager and nodes in Google Cloud.
 * **Instance Size** - Select the appropriate instance size based on the usecase from Google Cloud.
-* **SSL Certificates** - User can install Let's encrypt SSL certificates or use Red5Pro server without SSL certificate (HTTP only).
-* **MySQL Database** - Users have flexibility to create a MySQL databse server in Google Cloud or install it locally on the Stream Manager
+* **Load Balancer** -  This Terrform module create a Load Balancer for Stream Manager in Google Cloud.
+* **SSL Certificates** - This Terraform Module can create or use existing SSL certificate for Load Balancer
 * **Stream Manager** - Instance will be created automatically for Stream Manager
-* **Terraform Server** - Uesrs can choose to create a dedicated instance for Terraform Server or install it locally on the Stream Manager
-* **Origin Node Image** - To create Google Cloud(Gcloud) custom image for Orgin Node type for Stream Manager node group
-* **Edge Node Image** - To create Google Cloud(Gcloud) custom image for Edge Node type for Stream Manager node group (optional)
-* **Transcoder Node Image** - To create Google Cloud(Gcloud) custom image for Transcoder Node type for Stream Manager node group (optional)
-* **Relay Node Image** - To create Google Cloud(Gcloud) custom image for Relay Node type for Stream Manager node group (optional)
+* **Kafka Server** - Uesrs can choose to create a dedicated instance for Kafka Server or install it locally on the Stream Manager
+* **Red5 Node Image** - To create Google Cloud(Gcloud) custom image of Node for Stream Manager node group
 
 Example:  
 
 ```bash
 cp ~/Downloads/red5pro-server-0.0.0.b0-release.zip ./
-cp ~/Downloads/terraform-cloud-controller-0.0.0.jar ./
-cp ~/Downloads/terraform-service-0.0.0.zip ./
 ```
 
 ## Usage
@@ -67,19 +62,12 @@ No inputs.
 
 | Name | Description |
 |------|-------------|
-| <a name="output_database_host"></a> [database\_host](#output\_database\_host) | MySQL database host |
-| <a name="output_database_password"></a> [database\_password](#output\_database\_password) | Database Password |
-| <a name="output_database_port"></a> [database\_port](#output\_database\_port) | Database Port |
-| <a name="output_database_user"></a> [database\_user](#output\_database\_user) | Database User |
 | <a name="output_google_cloud_project_id"></a> [google\_cloud\_project\_id](#output\_google\_cloud\_project\_id) | Google Cloud Project ID where resources has been created |
+| <a name="output_manual_dns_record"></a> [manual\_dns\_record](#output\_manual\_dns\_record) | Manual DNS record |
 | <a name="output_module_output"></a> [module\_output](#output\_module\_output) | n/a |
-| <a name="output_node_edge_image"></a> [node\_edge\_image](#output\_node\_edge\_image) | Image name of the Red5 Pro Node Edge image |
-| <a name="output_node_origin_image"></a> [node\_origin\_image](#output\_node\_origin\_image) | Image name of the Red5 Pro Node Origin image |
-| <a name="output_node_relay_image"></a> [node\_relay\_image](#output\_node\_relay\_image) | Image name of the Red5 Pro Node Relay image |
-| <a name="output_node_transcoder_image"></a> [node\_transcoder\_image](#output\_node\_transcoder\_image) | Image name of the Red5 Pro Node Transcoder image |
+| <a name="output_red5pro_node_image"></a> [red5pro\_node\_image](#output\_red5pro\_node\_image) | Image name of the Red5 Pro Node image |
 | <a name="output_ssh_key_path"></a> [ssh\_key\_path](#output\_ssh\_key\_path) | Private SSH key path |
 | <a name="output_stream_manager_http_url"></a> [stream\_manager\_http\_url](#output\_stream\_manager\_http\_url) | Stream Manager HTTP URL |
 | <a name="output_stream_manager_https_url"></a> [stream\_manager\_https\_url](#output\_stream\_manager\_https\_url) | Stream Manager HTTPS URL |
 | <a name="output_stream_manager_ip"></a> [stream\_manager\_ip](#output\_stream\_manager\_ip) | Stream Manager IP |
-| <a name="output_terraform_service_ip"></a> [terraform\_service\_ip](#output\_terraform\_service\_ip) | Terraform Service Host |
 | <a name="output_vpc_netwrok_name"></a> [vpc\_netwrok\_name](#output\_vpc\_netwrok\_name) | VPC Network name used in Google Cloud |

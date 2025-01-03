@@ -1,24 +1,9 @@
 ################################################################################
 # OUTPUTS
 ################################################################################
-output "node_origin_image" {
+output "red5pro_node_image" {
   description = "Image name of the Red5 Pro Node Origin image"
-  value       = try(google_compute_image.red5_origin_image[0].name, null)
-}
-
-output "node_edge_image" {
-  description = "Image name of the Red5 Pro Node Edge image"
-  value       = try(google_compute_image.red5_edge_image[0].name, null)
-}
-
-output "node_transcoder_image" {
-  description = "Image name of the Red5 Pro Node Transcoder image"
-  value       = try(google_compute_image.red5_transcoder_image[0].name, null)
-}
-
-output "node_relay_image" {
-  description = "Image name of the Red5 Pro Node Relay image"
-  value       = try(google_compute_image.red5_relay_image[0].name, null)
+  value       = var.node_image_create ? google_compute_image.red5_node_image[0].name : null
 }
 
 output "google_cloud_project_id" {
@@ -36,40 +21,19 @@ output "ssh_key_path" {
   value       = local.ssh_private_key_path
 }
 
-output "single_red5pro_server_http_url" {
-  description = "Single Red5 Pro Server HTTP URL"
-  value       = local.single ? "http://${local.single_server_ip}:5080" : null
+output "standalone_red5pro_server_http_url" {
+  description = "Standalone Red5 Pro Server HTTP URL"
+  value       = local.standalone ? "http://${local.standalone_server_ip}:5080" : null
 }
 
-output "single_red5pro_server_https_url" {
-  description = "Single Red5 Pro Server HTTPS URL"
-  value       = local.single && var.https_letsencrypt_enable ? "https://${var.https_letsencrypt_certificate_domain_name}:443" : null
+output "standalone_red5pro_server_https_url" {
+  description = "Standalone Red5 Pro Server HTTPS URL"
+  value       = local.standalone && var.https_ssl_certificate != "none" ? "https://${var.https_ssl_certificate_domain_name}:443" : null
 }
 
-output "single_red5pro_server_ip" {
-  description = "Single Red5 Pro Server IP"
-  value       = local.single_server_ip
-}
-
-output "database_host" {
-  description = "MySQL database host"
-  value       = local.mysql_host
-}
-
-output "database_user" {
-  description = "Database User"
-  value       = var.mysql_username
-}
-
-output "database_port" {
-  description = "Database Port"
-  value       = var.mysql_port
-}
-
-output "database_password" {
-  sensitive   = true
-  description = "Database Password"
-  value       = var.mysql_password
+output "standalone_red5pro_server_ip" {
+  description = "Standalone Red5 Pro Server IP"
+  value       = local.standalone_server_ip
 }
 
 output "stream_manager_ip" {
@@ -79,20 +43,20 @@ output "stream_manager_ip" {
 
 output "stream_manager_http_url" {
   description = "Stream Manager HTTP URL"
-  value       = local.cluster ? "http://${local.stream_manager_ip}:5080" : null
+  value       = local.cluster ? "http://${local.stream_manager_ip}:80" : null
 }
 
 output "stream_manager_https_url" {
   description = "Stream Manager HTTPS URL"
-  value       = local.cluster && var.https_letsencrypt_enable ? "https://${var.https_letsencrypt_certificate_domain_name}:443" : null
+  value       = local.cluster_or_autoscale ? var.https_ssl_certificate != "none" ? "https://${var.https_ssl_certificate_domain_name}:443" : null : null
 }
 
 output "load_balancer_url" {
   description = "Load Balancer HTTPS URL"
-  value       = local.autoscaling && var.create_lb_with_ssl ? "https://${local.lb_ip_address}:443" : local.autoscaling ? "http://${local.lb_ip_address}:${local.sm_port}" : null
+  value       = local.autoscale && var.create_lb_with_ssl ? "https://${local.lb_ip_address}:443" : local.autoscale ? "http://${local.lb_ip_address}:80" : null
 }
 
-output "terraform_service_ip" {
-  description = "Terraform Service Host"
-  value       = local.terraform_service_ip
+output "manual_dns_record" {
+  description = "Manual DNS Record"
+  value       = var.https_ssl_certificate != "none" ? "Please create DNS A record for Stream Manager 2.0: '${var.https_ssl_certificate_domain_name} - ${local.cluster_or_autoscale ? local.stream_manager_ip : local.standalone_server_ip}'" : null
 }

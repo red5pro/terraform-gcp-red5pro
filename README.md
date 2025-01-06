@@ -32,8 +32,6 @@ This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/d
 * Install **Google Cloud CLI** https://cloud.google.com/sdk/docs/install
 * Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is using in bash scripts to create/delete Stream Manager node group using API)
 * Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5.net/downloads
-* * Download Red5 Pro Terraform controller for Google Cloud: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5.net/downloads
-* Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5.net/downloads
 * Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5.net
 * Login to Goolge Cloud CLI (To login to CLI follow the below documents or use the below mentioned command) 
   * Follow the documentation for CLI login - https://cloud.google.com/sdk/gcloud/reference/auth/login

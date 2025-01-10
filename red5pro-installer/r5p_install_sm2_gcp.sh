@@ -110,11 +110,11 @@ config_sm() {
         mkdir -p "$SM_HOME/certs"
 
         # Copy docker-compose.yml
-        if [ -f "$CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml" ]; then
-            cp -r "$CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml" "$SM_HOME/"
+        if [ -f "$CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml" ]; then
+            cp -r "$CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml" "$SM_HOME/"
         else
-            log_e "File $CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml not found"
-            ls -la "$CURRENT_DIRECTORY/autoscaling-with-ssl/"
+            log_e "File $CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml not found"
+            ls -la "$CURRENT_DIRECTORY/autoscaling-without-ssl/"
             exit 1
         fi
 

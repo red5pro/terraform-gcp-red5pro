@@ -18,7 +18,8 @@ locals {
   stream_manager_firewall              = local.cluster_or_autoscale ? var.vpc_create ? true : var.create_new_firewall_for_stream_manager ? true : false : false
   red5_node_firewall                   = local.cluster_or_autoscale ? var.vpc_create ? true : var.create_new_firewall_for_nodes ? true : false : false
   stream_manager_ssl                   = local.autoscale ? "none" : local.cluster_or_autoscale ? var.https_ssl_certificate : null
-  stream_manager_url                   = local.cluster_or_autoscale ? local.stream_manager_ssl != "none" ? "https://${local.stream_manager_ip}" : "http://${local.stream_manager_ip}" : null
+  stream_manager_url                   = local.cluster_or_autoscale ? local.stream_manager_ssl != "none" ? local.stream_manager_ssl == "letsencrypt" ? "http://${local.stream_manager_ip}" : "https://${local.stream_manager_ip}" : "http://${local.stream_manager_ip}" : null
+  stream_manager_url_destroy           = local.stream_manager_ssl != "none" ? "https://${local.stream_manager_ip}" : "http://${local.stream_manager_ip}"
   stream_manager_standalone            = local.autoscale ? false : true
   dedicated_red5pro_kafka_standalone   = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
   kafka_standalone_local_enable        = local.autoscale ? false : local.cluster && var.kafka_standalone_instance_create ? false : true
@@ -86,7 +87,7 @@ data "google_compute_zones" "available_zone" {
 }
 
 ################################################################################
-# Red5 Single Server Configuration
+# Red5 Standalone Server Configuration
 ################################################################################
 # Create security group
 resource "google_compute_firewall" "red5_standalone_firewall" {
@@ -331,6 +332,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     R5AS_AUTH_PASS=${var.stream_manager_auth_password}
     TF_VAR_project_id=${var.google_project_id}
     TF_VAR_r5p_license_key=${var.red5pro_license_key}
+    TF_VAR_r5p_node_network_tag=${var.new_or_existing_network_tag_for_nodes != "null" ? var.new_or_existing_network_tag_for_nodes : "null"}
     TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
     TRAEFIK_HOST=${var.https_ssl_certificate_domain_name}
     TRAEFIK_SSL_EMAIL=${var.https_ssl_certificate_email}
@@ -797,6 +799,8 @@ resource "google_compute_firewall" "red5_node_firewall" {
   }
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
+  target_tags = var.new_or_existing_network_tag_for_nodes != "null" ? tolist([var.new_or_existing_network_tag_for_nodes]) : []
+
 }
 
 # Red5 Pro Node server instance
@@ -864,6 +868,7 @@ resource "google_compute_instance" "red5_node_server" {
   lifecycle {
     ignore_changes = all
   }
+  tags             = tolist([var.new_or_existing_network_tag_for_nodes])
 }
 
 #################################################################################################
@@ -971,6 +976,7 @@ resource "null_resource" "node_group" {
     SM_URL         = "${local.stream_manager_url}"
     R5AS_AUTH_USER = "${var.stream_manager_auth_user}"
     R5AS_AUTH_PASS = "${var.stream_manager_auth_password}"
+    SM_URL_DESTROY = "${local.stream_manager_url_destroy}"
   }
   provisioner "local-exec" {
     when    = create
@@ -1023,7 +1029,7 @@ resource "null_resource" "node_group" {
 
   provisioner "local-exec" {
     when    = destroy
-    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_URL}' '${self.triggers.R5AS_AUTH_USER}' '${self.triggers.R5AS_AUTH_PASS}'"
+    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_URL_DESTROY}' '${self.triggers.R5AS_AUTH_USER}' '${self.triggers.R5AS_AUTH_PASS}'"
   }
 
   depends_on = [time_sleep.wait_for_delete_nodegroup[0]]

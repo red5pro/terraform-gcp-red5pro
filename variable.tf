@@ -534,6 +534,11 @@ variable "new_or_existing_network_tag_for_standalone_server" {
   type        = string
   default     = ""
 }
+variable "new_or_existing_network_tag_for_nodes" {
+  description = "Specify Node Network tag which will be used by as-terraform service while creating Node."
+  type        = string
+  default     = "null"
+}
 variable "create_new_firewall_for_standalone_server" {
   description = "Create a new firewall for Red5 Standalone server"
   type        = bool

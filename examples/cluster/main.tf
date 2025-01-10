@@ -11,7 +11,7 @@ module "red5pro_cluster" {
   google_project_id                = "example-gcp-project-name"                            # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
   ubuntu_version                   = "22.04"                                               # The version of ubuntu which is used to create Instance, it can either be 20.04 or 22.04
-  type                             = "cluster"                                             # Deployment type: single, cluster, autoscale
+  type                             = "cluster"                                             # Deployment type: standalone, cluster, autoscale
   name                             = "red5pro-cluster"                                     # Name to be used on all the resources as identifier
   path_to_red5pro_build            = "./red5pro-server-0.0.0.b0-release.zip"               # Absolute path or relative path to Red5 Pro server ZIP file
 
@@ -28,6 +28,7 @@ module "red5pro_cluster" {
   create_new_firewall_for_nodes                     = true                                 # True - Create a new firewall for Red5 Node in VPC, False - Use existing firewall of VPC using network tag
   new_or_existing_network_tag_for_kafka_standalone  = "example-kafka-service-instance"     # Specify the new or existing Network Tag for Kafka Service to be used by the Virtual Network firewall. If `vpc_create = true` specify new network tag, if `vpc_create = false` specify existing network tag for Kafka Service
   new_or_existing_network_tag_for_stream_manager    = "example-sm-instance"                # Specify the new or existing Network Tag for Stream Manager to be used by the Virtual Network firewall. If `vpc_create = true` specify new network tag, if `vpc_create = false` specify existing network tag for stream manager
+  new_or_existing_network_tag_for_nodes             = "example-node-instance"              # Specify new/existing Node Network tag which will be used by as-terraform service while creating Node and it will be utilized by Firewall in GCP. If `vpc_create = true` specify new network tag for red5 node, if `vpc_create = false` specify existing network tag for red5 node
 
   # Red5 Pro general configuration
   red5pro_license_key                        = "1111-2222-3333-4444"                       # Red5 Pro license key (https://account.red5.net/login)

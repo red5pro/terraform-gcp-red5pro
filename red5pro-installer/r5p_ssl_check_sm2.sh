@@ -29,13 +29,13 @@ if [ "$SM_SSL" == "letsencrypt" ]; then
             if [ -f "$HOME/autoscaling-with-ssl/docker-compose.yml" ]; then
                 rm -rf "$SM_HOME/docker-compose.yml"
                 cp -r "$HOME/autoscaling-with-ssl/docker-compose.yml" "$SM_HOME/"
+                docker compose up -d
+                break
             else
                 log_e "File $HOME/autoscaling-with-ssl/docker-compose.yml not found"
                 ls -la "$HOME/autoscaling-with-ssl/"
                 exit 1
             fi
-            docker compose up -d
-            break
         else
             log_i "DNS record for domain: $SM_SSL_DOMAIN was not found."
         fi

@@ -111,19 +111,19 @@ module "red5pro" {
   node_group_origins_min               = 1               # Number of minimum Origins
   node_group_origins_max               = 10              # Number of maximum Origins
   node_group_origins_instance_type     = "n2-standard-2" # Origins google instance type
-  node_group_origins_disk_size         = 16              # Volume size for Origins
+  node_group_origins_disk_size         = 16              # Disk size for Origins
   node_group_edges_min                 = 1               # Number of minimum Edges
   node_group_edges_max                 = 20              # Number of maximum Edges
   node_group_edges_instance_type       = "n2-standard-2" # Edges google instance type
-  node_group_edges_disk_size           = 16              # Volume size for Edges
+  node_group_edges_disk_size           = 16              # Disk size for Edges
   node_group_transcoders_min           = 0               # Number of minimum Transcoders
   node_group_transcoders_max           = 10              # Number of maximum Transcoders
   node_group_transcoders_instance_type = "n2-standard-2" # Transcoders google instance type
-  node_group_transcoders_disk_size     = 16              # Volume size for Transcoders
+  node_group_transcoders_disk_size     = 16              # Disk size for Transcoders
   node_group_relays_min                = 0               # Number of minimum Relays
   node_group_relays_max                = 20              # Number of maximum Relays
   node_group_relays_instance_type      = "n2-standard-2" # Relays google instance type
-  node_group_relays_disk_size          = 16              # Volume size for Relays
+  node_group_relays_disk_size          = 16              # Disk size for Relays
 }
 
 output "module_output" {

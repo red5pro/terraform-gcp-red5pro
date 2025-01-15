@@ -364,7 +364,7 @@ oetr)
 esac
 
 check_stream_manager() {
-    log_i "Checking Stream Manager status. URL: $SM_STATUS_URL"
+    log_i "Checking Stream Manager status."
 
     for i in {1..20}; do
         # Check HTTPS

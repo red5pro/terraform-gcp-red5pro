@@ -18,7 +18,7 @@ variable "name" {
   }
 }
 variable "path_to_red5pro_build" {
-  description = "Path to the Red5 Pro build zip file, absolute path or relative path. https://account.red5pro.com/downloads. Example: /home/ubuntu/red5pro-server-0.0.0.b0-release.zip"
+  description = "Path to the Red5 Pro build zip file, absolute path or relative path. https://account.red5.net/downloads. Example: /home/ubuntu/red5pro-server-0.0.0.b0-release.zip"
   type        = string
   default     = ""
   validation {
@@ -131,26 +131,26 @@ variable "standalone_disk_type" {
   default     = "pd-ssd"
 }
 variable "standalone_disk_size" {
-  description = "Red5 Pro standalone server volume size"
+  description = "Red5 Pro standalone server disk size"
   type        = number
   default     = 16
   validation {
-    condition     = var.standalone_disk_size >= 8
-    error_message = "The standalone_disk_size value must be a valid! Minimum 8"
+    condition     = var.standalone_disk_size >= 10
+    error_message = "The standalone_disk_size value must be a valid! Minimum 10"
   }
 }
 variable "standalone_red5pro_inspector_enable" {
-  description = "Red5 Pro Standalone server Inspector enable/disable (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)"
+  description = "Red5 Pro Standalone server Inspector enable/disable (https://www.red5.net/docs/red5-pro/users-guide/troubleshooting-and-best-practices/red5-pro-server/red5-pro-inspector-app/)"
   type        = bool
   default     = false
 }
 variable "standalone_red5pro_restreamer_enable" {
-  description = "Red5 Pro Standalone server Restreamer enable/disable (https://www.red5pro.com/docs/special/restreamer/overview/)"
+  description = "Red5 Pro Standalone server Restreamer enable/disable (https://www.red5.net/docs/red5-pro/users-guide/restreamer/red5-pro-restreamer-overview/)"
   type        = bool
   default     = false
 }
 variable "standalone_red5pro_socialpusher_enable" {
-  description = "Red5 Pro Standalone server SocialPusher enable/disable (https://www.red5pro.com/docs/special/social-media-plugin/rest-api/)"
+  description = "Red5 Pro Standalone server SocialPusher enable/disable (https://www.red5.net/docs/red5-pro/development/api/social-pusher/red5-pro-social-pusher-api/)"
   type        = bool
   default     = false
 }
@@ -160,12 +160,12 @@ variable "standalone_red5pro_suppressor_enable" {
   default     = false
 }
 variable "standalone_red5pro_hls_enable" {
-  description = "Red5 Pro Standalone server HLS enable/disable (https://www.red5pro.com/docs/protocols/hls-plugin/overview/)"
+  description = "Red5 Pro Standalone server HLS enable/disable (https://www.red5.net/docs/red5-pro/users-guide/protocols/hls-plugin/red5-pro-hls-plugin-overview/)"
   type        = bool
   default     = false
 }
 variable "standalone_red5pro_round_trip_auth_enable" {
-  description = "Round trip authentication on the red5pro server enable/disable - Auth server should be deployed separately (https://www.red5pro.com/docs/special/round-trip-auth/overview/)"
+  description = "Round trip authentication on the red5pro server enable/disable - Auth server should be deployed separately (https://www.red5.net/docs/red5-pro/users-guide/authentication/round-trip-authentication/red5-pro-round-trip-authentication/)"
   type        = bool
   default     = false
 }
@@ -340,7 +340,7 @@ variable "red5_node_firewall_udp_ports" {
 
 # Red5 Pro Node Configuration
 variable "node_image_create" {
-  description = "Create new node image true/false. (Default:true) (https://www.red5pro.com/docs/special/relays/overview/#origin-and-edge-nodes)"
+  description = "Create new node image true/false. (Default:true) (https://www.red5.net/docs/red5-pro/development/api/stream-manager-2-0/stream-manager-2-admin-api/#origin-and-edge-nodes)"
   type        = bool
   default     = false
 }
@@ -355,7 +355,7 @@ variable "node_image_disk_type" {
   default     = "pd-ssd"
 }
 variable "node_image_disk_size" {
-  description = "Node image - volume size"
+  description = "Node image - Disk size"
   type        = number
   default     = 10
   validation {
@@ -386,7 +386,7 @@ variable "node_group_origins_instance_type" {
   default     = ""
 }
 variable "node_group_origins_disk_size" {
-  description = "Volume size in GB for Origins. Minimum 10GB"
+  description = "Disk size in GB for Origins. Minimum 10GB"
   type        = number
   default     = 16
   validation {
@@ -410,7 +410,7 @@ variable "node_group_edges_instance_type" {
   default     = ""
 }
 variable "node_group_edges_disk_size" {
-  description = "Volume size in GB for Edges. Minimum 10GB"
+  description = "Disk size in GB for Edges. Minimum 10GB"
   type        = number
   default     = 16
   validation {
@@ -434,7 +434,7 @@ variable "node_group_transcoders_instance_type" {
   default     = ""
 }
 variable "node_group_transcoders_disk_size" {
-  description = "Volume size in GB for Transcoders. Minimum 10GB"
+  description = "Disk size in GB for Transcoders. Minimum 10GB"
   type        = number
   default     = 16
   validation {
@@ -458,7 +458,7 @@ variable "node_group_relays_instance_type" {
   default     = ""
 }
 variable "node_group_relays_disk_size" {
-  description = "Volume size in GB for Relays. Minimum 10GB"
+  description = "Disk size in GB for Relays. Minimum 10GB"
   type        = number
   default     = 16
   validation {
@@ -489,7 +489,7 @@ variable "kafka_standalone_firewall_ports" {
   default     = ["9092"]
 }
 variable "kafka_standalone_disk_size" {
-  description = "value to set the volume size for kafka"
+  description = "value to set the Disk size for kafka"
   type        = number
   default     = 24
   validation {

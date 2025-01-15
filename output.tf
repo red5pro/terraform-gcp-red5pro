@@ -17,11 +17,11 @@ output "ssh_private_key_path" {
   description = "Private SSH key path"
   value       = local.ssh_private_key_path
 }
-output "standalone_red5pro_server_url_https" {
+output "standalone_red5pro_server_url_http" {
   description = "Standalone Red5 Pro Server HTTP URL"
   value       = local.standalone ? "http://${local.standalone_server_ip}:5080" : ""
 }
-output "standalone_red5pro_server_url_http" {
+output "standalone_red5pro_server_url_https" {
   description = "Standalone Red5 Pro Server HTTPS URL"
   value       = local.standalone && var.https_ssl_certificate != "none" ? "https://${var.https_ssl_certificate_domain_name}:443" : ""
 }

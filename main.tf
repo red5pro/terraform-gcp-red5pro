@@ -9,9 +9,9 @@ locals {
   ssh_private_key_path            = var.ssh_key_use_existing ? var.ssh_key_private_key_path_existing : local_file.red5pro_ssh_key_pem[0].filename
   vpc_network_name                = var.vpc_use_existing ? data.google_compute_network.existing_vpc_network[0].name : google_compute_network.vpc_red5_network[0].name
   standalone_server_ip            = local.standalone ? google_compute_instance.red5_standalone_server[0].network_interface.0.access_config.0.nat_ip : ""
-  standalone_server_firewall      = local.standalone && var.vpc_use_existing && var.firewall_standalone_network_tags_use_existing ? false : true
+  standalone_server_firewall      = local.standalone ? var.vpc_use_existing && var.firewall_standalone_network_tags_use_existing ? false : true : false
   standalone_server_firewall_tags = local.standalone_server_firewall ? ["${var.name}-standalone-tag"] : var.firewall_standalone_network_tags_existing
-  stream_manager_firewall         = local.cluster_or_autoscale && var.vpc_use_existing && var.firewall_stream_manager_network_tags_use_existing ? false : true
+  stream_manager_firewall         = local.cluster_or_autoscale ? var.vpc_use_existing && var.firewall_stream_manager_network_tags_use_existing ? false : true : false
   stream_manager_firewall_tags    = local.stream_manager_firewall ? ["${var.name}-sm-tag"] : var.firewall_stream_manager_network_tags_existing
   stream_manager_nat_ip           = local.cluster ? var.stream_manager_reserved_ip_use_existing ? data.google_compute_address.existing_sm_reserved_ip[0].address : google_compute_address.sm_reserved_ip[0].address : ""
   stream_manager_ip               = local.autoscale ? local.lb_ip_address : local.cluster ? local.stream_manager_nat_ip : ""
@@ -25,7 +25,7 @@ locals {
   kafka_ssl_keystore_key          = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", trimspace(tls_private_key.kafka_server_key[0].private_key_pem_pkcs8)))) : null
   kafka_ssl_truststore_cert       = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_self_signed_cert.ca_cert[0].cert_pem))) : null
   kafka_ssl_keystore_cert_chain   = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_locally_signed_cert.kafka_server_cert[0].cert_pem))) : null
-  kafka_standalone_firewall       = local.cluster_or_autoscale && var.vpc_use_existing && var.firewall_kafka_network_tags_use_existing ? false : true
+  kafka_standalone_firewall       = local.cluster_or_autoscale && local.kafka_standalone_instance ? var.vpc_use_existing && var.firewall_kafka_network_tags_use_existing ? false : true : false
   kafka_standalone_firewall_tags  = local.kafka_standalone_firewall ? ["${var.name}-kafka-tag"] : var.firewall_kafka_network_tags_existing
   kafka_standalone_instance       = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
   ubuntu_image                    = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
@@ -728,13 +728,6 @@ resource "google_compute_autoscaler" "stream_manager_autoscaler" {
   }
 }
 
-# Target Pool for Stream Manager
-# resource "google_compute_target_pool" "stream_manager_target_pool" {
-#   count               = local.autoscale ? 1 : 0
-#   name = "${var.name}-sm-target-pool"
-#   region = var.google_region
-# }
-
 # Instance Group Manager for Stream Manager
 resource "google_compute_instance_group_manager" "stream_manager_instance_group" {
   count   = local.autoscale ? 1 : 0
@@ -751,8 +744,6 @@ resource "google_compute_instance_group_manager" "stream_manager_instance_group"
     name              = "${var.name}-sm-version"
   }
   base_instance_name = "${var.name}-stream-manager"
-  # target_size         = 1
-  # target_pools       = [google_compute_target_pool.stream_manager_target_pool[0].id]
 
   auto_healing_policies {
     health_check      = google_compute_health_check.sm_health_check[0].id

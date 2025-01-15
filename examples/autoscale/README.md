@@ -19,10 +19,10 @@ This example Terraform module automates the infrastructure provisioning of Autos
 - Instance pool for Stream Manager 2.0 instances
 - Autoscaling configuration for Stream Manager 2.0 instances
 - HTTP(S) Load Balancer for Stream Manager 2.0 instances
-- SSL Certificate for HTTP(S) Load Balancer:
-  - `none`: Load Balancer without HTTPS and SSL certificate (HTTP on port `80`)
-  - `letsencrypt`: Stream Manager 2.0 with HTTPS and SSL certificate obtained by Let's Encrypt. HTTP on port `80`, HTTPS on port `443`
-  - `imported`: Load Balancer with HTTPS using an imported SSL certificate (HTTP on port `80`, HTTPS on port `443`)
+- SSL Certificate for HTTP(S) Load Balancer. Options:
+  - `none` - HTTP(S) Load Balancer without HTTPS and SSL certificate. Only HTTP on port `80`.
+  - `imported` - HTTP(S) Load Balancer with HTTPS and an imported SSL certificate in Google Cloud Certificate Manager. HTTP on port `80`, HTTPS on port `443`.
+  - `existing` - HTTP(S) Load Balancer with HTTPS using an existing SSL certificate in Google Cloud Certificate Manager. HTTP on port `80`, HTTPS on port `443`.
 - Red5 Pro (SM2.0) Node instance image (origins, edges, transcoders, relays)
 - Red5 Pro (SM2.0) Autoscaling Node group (origins, edges, transcoders, relays)
 

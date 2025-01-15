@@ -6,25 +6,25 @@ This example Terraform module automates the infrastructure provisioning of Autos
 
 ## Terraform Deployed Resources (autoscale)
 
-- **VPC**
-- **Public Subnet**
-- **Cloud Router** 
-- **Firewall Rules**
+- VPC
+- Public Subnet
+- Cloud Router 
+- Firewall Rules
   - Stream Manager 2.0
   - Kafka
   - Red5 Pro (SM2.0) Autoscaling Nodes
-- **SSH key pair** (use existing or create a new one)
-- **Standalone Kafka instance**
-- **Stream Manager 2.0 instance image**
-- **Instance pool** for Stream Manager 2.0 instances
-- **Autoscaling configuration** for Stream Manager 2.0 instances
-- **HTTP(S) Load Balancer** for Stream Manager 2.0 instances
-- **SSL Certificate** for HTTP(S) Load Balancer:
+- SSH key pair (use existing or create a new one)
+- Standalone Kafka instance
+- Stream Manager 2.0 instance image
+- Instance pool for Stream Manager 2.0 instances
+- Autoscaling configuration for Stream Manager 2.0 instances
+- HTTP(S) Load Balancer for Stream Manager 2.0 instances
+- SSL Certificate for HTTP(S) Load Balancer:
   - `none`: Load Balancer without HTTPS and SSL certificate (HTTP on port `80`)
   - `letsencrypt`: Stream Manager 2.0 with HTTPS and SSL certificate obtained by Let's Encrypt. HTTP on port `80`, HTTPS on port `443`
   - `imported`: Load Balancer with HTTPS using an imported SSL certificate (HTTP on port `80`, HTTPS on port `443`)
-- **Red5 Pro (SM2.0) Node instance image** (origins, edges, transcoders, relays)
-- **Red5 Pro (SM2.0) Autoscaling Node group** (origins, edges, transcoders, relays)
+- Red5 Pro (SM2.0) Node instance image (origins, edges, transcoders, relays)
+- Red5 Pro (SM2.0) Autoscaling Node group (origins, edges, transcoders, relays)
 
 
 ## Example main.tf (autoscale)

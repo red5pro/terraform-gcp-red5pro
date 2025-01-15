@@ -1,13 +1,12 @@
-# Standalone Red5 Pro Server Deployment (Standalone)
+## Standalone Red5 Pro Server Deployment (Standalone)
 This module automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5.net/docs/installation/) on GCP using Terraform.
 
 ## Terraform Deployed Resources (Standalone)
 
-- VPC  
+- VPC 
 - Public Subnet  
-- Internet Gateway  
-- Route Table  
-- Security Groups for Standalone Red5 Pro Server  
+- Cloud Router 
+- Firewall for Standalone Red5 Pro Server  
 - SSH Key Pair (use existing or create a new one)  
 - Standalone Red5 Pro Server Instance  
 - SSL Certificate for Standalone Red5 Pro Server Instance. Options:  
@@ -15,9 +14,7 @@ This module automates the infrastructure provisioning of the [Red5 Pro standalon
   - `letsencrypt`: Red5 Pro server with HTTPS and SSL certificate obtained by Let's Encrypt. HTTP on port `5080`, HTTPS on port `443`  
   - `imported`: Red5 Pro server with HTTPS and imported SSL certificate. HTTP on port `5080`, HTTPS on port `443`  
 
-```
 ## Example `main.tf` (standalone)
-
 ```yaml
 provider "google" {
   project = "example-gcp-project-name" # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)

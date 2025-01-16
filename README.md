@@ -1,4 +1,5 @@
-# Google Cloud Red5 Pro Terraform module
+# Terraform Module for Deploying Red5 Pro Google Cloud Infrastructure (GCP) - Stream Manager 2.0
+
 [Red5 Pro](https://www.red5.net/) is a real-time video streaming server plaform known for its low-latency streaming capabilities, making it ideal for interactive applications like online gaming, streaming events and video conferencing etc.
 
 This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/docs/installation/installation/googlecloudvminstall/) that provisions infrastucture over [Google Cloud(Gcloud)](https://console.cloud.google.com/).
@@ -75,7 +76,7 @@ This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/d
 
 In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5.net/docs/installation/).
 
-#### Terraform Deployed Resources (standalone)
+### Terraform Deployed Resources (standalone)
 
 - VPC 
 - Public Subnet  
@@ -166,13 +167,12 @@ output "module_output" {
   value = module.red5pro
 }
 ```
----
 
 ## Red5 Pro Stream Manager cluster deployment (cluster) - [Example](https://github.com/red5pro/terraform-gcp-red5pro/tree/master/examples/cluster)
 
 In the following example, Terraform module will automates the infrastructure provisioning of the Stream Manager 2.0 cluster with Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
 
-#### Terraform Deployed Resources (cluster)
+### Terraform Deployed Resources (cluster)
 
 - VPC
 - Public Subnet
@@ -329,7 +329,7 @@ output "module_output" {
 
 In the following example, Terraform module will automates the infrastructure provisioning of the Autoscale Stream Managers 2.0 with Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
 
-#### Terraform Deployed Resources (autoscale)
+### Terraform Deployed Resources (autoscale)
 
 - VPC
 - Public Subnet
@@ -484,6 +484,7 @@ output "module_output" {
   value = module.red5pro
 }
 ```
+
 ---
 
 **NOTES**

@@ -126,7 +126,3 @@ module "red5pro" {
   node_group_relays_instance_type      = "n2-standard-2" # Relays google instance type
   node_group_relays_disk_size          = 16              # Disk size for Relays
 }
-
-output "module_output" {
-  value = module.red5pro
-}

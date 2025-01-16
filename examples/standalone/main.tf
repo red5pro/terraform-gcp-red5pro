@@ -72,6 +72,3 @@ module "red5pro" {
   # https_ssl_certificate_key_path              = "/PATH/TO/SSL/KEY/privkey.pem"
 }
 
-output "module_output" {
-  value = module.red5pro
-}

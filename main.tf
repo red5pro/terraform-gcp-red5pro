@@ -1,34 +1,34 @@
 locals {
-  standalone                           = var.type == "standalone" ? true : false
-  cluster                              = var.type == "cluster" ? true : false
-  autoscale                            = var.type == "autoscale" ? true : false
-  google_cloud_project                 = data.google_project.existing_gcp_project.project_id
-  ssh_private_key_path                 = var.create_new_ssh_keys ? local_file.red5pro_ssh_key_pem[0].filename : var.existing_private_ssh_key_path
-  public_ssh_key                       = var.create_new_ssh_keys ? tls_private_key.red5pro_ssh_key[0].public_key_openssh : file(var.existing_public_ssh_key_path)
-  private_ssh_key                      = var.create_new_ssh_keys ? tls_private_key.red5pro_ssh_key[0].private_key_pem : file(var.existing_private_ssh_key_path)
-  vpc_network_name                     = var.vpc_create ? google_compute_network.vpc_red5_network[0].name : data.google_compute_network.existing_vpc_network[0].name
-  standalone_server_ip                 = local.standalone ? google_compute_instance.red5_standalone_server[0].network_interface.0.access_config.0.nat_ip : null
-  cluster_or_autoscale                 = local.cluster || local.autoscale ? true : false
-  stream_manager_ip                    = local.autoscale ? local.lb_ip_address : local.cluster ? local.sm_nat_ip : null
-  lb_ssl_certificate                   = local.autoscale && var.create_new_lb_ssl_cert && var.create_lb_with_ssl ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : local.cluster || local.standalone ? null : var.create_lb_with_ssl ? data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id : null
-  lb_ip_address                        = local.autoscale && var.create_new_global_reserved_ip_for_lb ? google_compute_global_address.lb_reserved_ip[0].address : local.autoscale ? data.google_compute_global_address.existing_lb_reserved_ip[0].address : null
-  create_sm_reserved_ip                = local.cluster && var.create_new_reserved_ip_for_stream_manager ? true : false
-  sm_nat_ip                            = local.create_sm_reserved_ip ? google_compute_address.sm_reserved_ip[0].address : local.cluster ? data.google_compute_address.existing_sm_reserved_ip[0].address : null
-  standalone_server_firewall           = local.standalone ? var.vpc_create ? true : var.create_new_firewall_for_standalone_server ? true : false : false
-  stream_manager_firewall              = local.cluster_or_autoscale ? var.vpc_create ? true : var.create_new_firewall_for_stream_manager ? true : false : false
-  red5_node_firewall                   = local.cluster_or_autoscale ? var.vpc_create ? true : var.create_new_firewall_for_nodes ? true : false : false
-  stream_manager_ssl                   = local.autoscale ? "none" : local.cluster_or_autoscale ? var.https_ssl_certificate : null
-  stream_manager_url                   = local.cluster_or_autoscale ? local.stream_manager_ssl != "none" ? local.stream_manager_ssl == "letsencrypt" ? "http://${local.stream_manager_ip}" : "https://${local.stream_manager_ip}" : "http://${local.stream_manager_ip}" : null
-  stream_manager_url_destroy           = local.stream_manager_ssl != "none" ? "https://${local.stream_manager_ip}" : "http://${local.stream_manager_ip}"
-  stream_manager_standalone            = local.autoscale ? false : true
-  dedicated_red5pro_kafka_standalone   = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
-  kafka_standalone_local_enable        = local.autoscale ? false : local.cluster && var.kafka_standalone_instance_create ? false : true
-  kafka_standalone_firewall            = local.cluster_or_autoscale ? var.vpc_create ? true : var.create_new_firewall_for_kafka_standalone ? true : false : false
-  kafka_ip                             = local.cluster_or_autoscale ? local.dedicated_red5pro_kafka_standalone ? google_compute_instance.red5pro_kafka_standalone[0].network_interface.0.network_ip : google_compute_instance.red5_stream_manager_server[0].network_interface.0.network_ip : null
-  kafka_on_sm_replicas                 = local.dedicated_red5pro_kafka_standalone ? 0 : 1
-  kafka_ssl_keystore_key               = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", trimspace(tls_private_key.kafka_server_key[0].private_key_pem_pkcs8)))) : null
-  kafka_ssl_truststore_cert            = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_self_signed_cert.ca_cert[0].cert_pem))) : null
-  kafka_ssl_keystore_cert_chain        = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_locally_signed_cert.kafka_server_cert[0].cert_pem))) : null
+  standalone                      = var.type == "standalone" ? true : false
+  cluster                         = var.type == "cluster" ? true : false
+  autoscale                       = var.type == "autoscale" ? true : false
+  cluster_or_autoscale            = local.cluster || local.autoscale ? true : false
+  google_cloud_project            = data.google_project.existing_gcp_project.project_id
+  ssh_public_key                  = var.ssh_key_use_existing ? file(var.ssh_key_public_key_path_existing) : tls_private_key.red5pro_ssh_key[0].public_key_openssh
+  ssh_private_key                 = var.ssh_key_use_existing ? file(var.ssh_key_private_key_path_existing) : tls_private_key.red5pro_ssh_key[0].private_key_pem
+  ssh_private_key_path            = var.ssh_key_use_existing ? var.ssh_key_private_key_path_existing : local_file.red5pro_ssh_key_pem[0].filename
+  vpc_network_name                = var.vpc_use_existing ? data.google_compute_network.existing_vpc_network[0].name : google_compute_network.vpc_red5_network[0].name
+  standalone_server_ip            = local.standalone ? google_compute_instance.red5_standalone_server[0].network_interface.0.access_config.0.nat_ip : ""
+  standalone_server_firewall      = local.standalone ? var.vpc_use_existing && var.firewall_standalone_network_tags_use_existing ? false : true : false
+  standalone_server_firewall_tags = local.standalone_server_firewall ? ["${var.name}-standalone-tag"] : var.firewall_standalone_network_tags_existing
+  stream_manager_firewall         = local.cluster_or_autoscale ? var.vpc_use_existing && var.firewall_stream_manager_network_tags_use_existing ? false : true : false
+  stream_manager_firewall_tags    = local.stream_manager_firewall ? ["${var.name}-sm-tag"] : var.firewall_stream_manager_network_tags_existing
+  stream_manager_nat_ip           = local.cluster ? var.stream_manager_reserved_ip_use_existing ? data.google_compute_address.existing_sm_reserved_ip[0].address : google_compute_address.sm_reserved_ip[0].address : ""
+  stream_manager_ip               = local.autoscale ? local.lb_ip_address : local.cluster ? local.stream_manager_nat_ip : ""
+  stream_manager_ssl              = local.autoscale ? "none" : var.https_ssl_certificate
+  stream_manager_standalone       = local.autoscale ? false : true
+  lb_ip_address                   = local.autoscale ? var.lb_global_reserved_ip_use_existing ? data.google_compute_global_address.existing_lb_reserved_ip[0].address : google_compute_global_address.lb_reserved_ip[0].address : ""
+  red5_node_firewall              = local.cluster_or_autoscale && var.vpc_use_existing && var.firewall_nodes_network_tags_use_existing ? false : true
+  red5_node_firewall_tags         = local.red5_node_firewall ? ["${var.name}-node-tag"] : var.firewall_nodes_network_tags_existing
+  kafka_ip                        = local.cluster_or_autoscale ? local.kafka_standalone_instance ? google_compute_instance.red5pro_kafka_standalone[0].network_interface.0.network_ip : google_compute_instance.red5_stream_manager_server[0].network_interface.0.network_ip : null
+  kafka_on_sm_replicas            = local.kafka_standalone_instance ? 0 : 1
+  kafka_ssl_keystore_key          = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", trimspace(tls_private_key.kafka_server_key[0].private_key_pem_pkcs8)))) : null
+  kafka_ssl_truststore_cert       = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_self_signed_cert.ca_cert[0].cert_pem))) : null
+  kafka_ssl_keystore_cert_chain   = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_locally_signed_cert.kafka_server_cert[0].cert_pem))) : null
+  kafka_standalone_firewall       = local.cluster_or_autoscale && local.kafka_standalone_instance ? var.vpc_use_existing && var.firewall_kafka_network_tags_use_existing ? false : true : false
+  kafka_standalone_firewall_tags  = local.kafka_standalone_firewall ? ["${var.name}-kafka-tag"] : var.firewall_kafka_network_tags_existing
+  kafka_standalone_instance       = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
+  ubuntu_image                    = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
 }
 
 ################################################################################
@@ -36,7 +36,7 @@ locals {
 ################################################################################
 # Existing google project of google cloud account
 data "google_project" "existing_gcp_project" {
-  project_id          = var.google_project_id
+  project_id = var.google_project_id
 }
 
 ################################################################################
@@ -44,22 +44,24 @@ data "google_project" "existing_gcp_project" {
 ################################################################################
 # SSH key pair generation
 resource "tls_private_key" "red5pro_ssh_key" {
-  count               = var.create_new_ssh_keys ? 1 : 0
-  algorithm           = "RSA"
-  rsa_bits            = 4096
-}
-# Save SSH key pair files to local folder
-resource "local_file" "red5pro_ssh_key_pem" {
-  count               = var.create_new_ssh_keys ? 1 : 0
-  filename            = "./${var.name}-ssh.pem"
-  content             = tls_private_key.red5pro_ssh_key[0].private_key_pem
-  file_permission     = "0400"
+  count     = var.ssh_key_use_existing ? 0 : 1
+  algorithm = "RSA"
+  rsa_bits  = 4096
 }
 
+# Save SSH private key to local folder
+resource "local_file" "red5pro_ssh_key_pem" {
+  count           = var.ssh_key_use_existing ? 0 : 1
+  filename        = "./${var.name}-ssh.pem"
+  content         = tls_private_key.red5pro_ssh_key[0].private_key_pem
+  file_permission = "0400"
+}
+
+# Save SSH public key to local folder
 resource "local_file" "red5pro_ssh_key_pub" {
-  count               = var.create_new_ssh_keys ? 1 : 0
-  filename            = "./${var.name}-ssh.pub"
-  content             = tls_private_key.red5pro_ssh_key[0].public_key_openssh
+  count    = var.ssh_key_use_existing ? 0 : 1
+  filename = "./${var.name}-ssh.pub"
+  content  = tls_private_key.red5pro_ssh_key[0].public_key_openssh
 }
 
 ################################################################################
@@ -67,85 +69,87 @@ resource "local_file" "red5pro_ssh_key_pub" {
 ################################################################################
 # Create VPC
 resource "google_compute_network" "vpc_red5_network" {
-  count                   = var.vpc_create ? 1 : 0
-  name                    = "${var.name}-vpc"
-  project                 = local.google_cloud_project
-  auto_create_subnetworks = true
+  count                           = var.vpc_use_existing ? 0 : 1
+  name                            = "${var.name}-vpc"
+  project                         = local.google_cloud_project
+  auto_create_subnetworks         = true
   delete_default_routes_on_create = false
 }
 
+# Get existing VPC
 data "google_compute_network" "existing_vpc_network" {
-  count                   = var.vpc_create ? 0 : 1
-  name                    = var.existing_vpc_network_name
-  project                 = local.google_cloud_project
+  count   = var.vpc_use_existing ? 1 : 0
+  name    = var.vpc_name_existing
+  project = local.google_cloud_project
 }
 
+# Get available zones
 data "google_compute_zones" "available_zone" {
-  region                  = var.google_region
-  project                 = local.google_cloud_project
-  status                  = "UP"
+  region  = var.google_region
+  project = local.google_cloud_project
+  status  = "UP"
 }
 
 ################################################################################
 # Red5 Standalone Server Configuration
 ################################################################################
-# Create security group
+# Create security group for Red5 Standalone server
 resource "google_compute_firewall" "red5_standalone_firewall" {
-  count         = local.standalone && local.standalone_server_firewall ? 1 : 0
-  name          = "${var.name}-standalone-firewall"
-  network       = local.vpc_network_name
-  priority      = 1000
+  count   = local.standalone_server_firewall ? 1 : 0
+  name    = "${var.name}-standalone-firewall"
+  network = local.vpc_network_name
   allow {
-    protocol    = "icmp"
+    protocol = "icmp"
   }
 
   allow {
-    protocol    = "tcp"
-    ports       = var.red5_standlaone_firewall_tcp_ports
+    protocol = "tcp"
+    ports    = var.red5_standalone_firewall_tcp_ports
   }
 
   allow {
-    protocol    = "udp"
-    ports       = var.red5_standlaone_firewall_udp_ports
+    protocol = "udp"
+    ports    = var.red5_standlaone_firewall_udp_ports
   }
 
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
-  target_tags   = tolist([var.new_or_existing_network_tag_for_standalone_server])
+  target_tags   = local.standalone_server_firewall_tags
 }
 
+# Create security group for Red5 Standalone server SSH
 resource "google_compute_firewall" "red5_standalone_ssh_firewall" {
-  count         = local.standalone && local.standalone_server_firewall ? 1 : 0
-  name          = "${var.name}-standalone-ssh-firewall"
-  network       = local.vpc_network_name
-  priority      = 1000
+  count   = local.standalone && local.standalone_server_firewall ? 1 : 0
+  name    = "${var.name}-standalone-ssh-firewall"
+  network = local.vpc_network_name
   allow {
-    protocol    = "tcp"
-    ports       = ["22"]
+    protocol = "tcp"
+    ports    = ["22"]
   }
-  source_ranges = var.red5_standalone_ssh_connection_source_ranges
+  source_ranges = var.firewall_ssh_allowed_ip_ranges
   project       = local.google_cloud_project
-  target_tags   = tolist([var.new_or_existing_network_tag_for_standalone_server])
+  target_tags   = local.standalone_server_firewall_tags
 }
 
 resource "random_password" "ssl_password_red5pro_standalone" {
-  count         = local.standalone && var.https_ssl_certificate != "none" ? 1 : 0
-  length        = 16
-  special       = false
+  count   = local.standalone && var.https_ssl_certificate != "none" ? 1 : 0
+  length  = 16
+  special = false
 }
 
 # Red5 Pro standalone server instance
 resource "google_compute_instance" "red5_standalone_server" {
   count        = local.standalone ? 1 : 0
   name         = "${var.name}-standalone-server"
-  machine_type = var.standalone_server_instance_type
-  zone         = element(data.google_compute_zones.available_zone.names, count.index)
+  machine_type = var.standalone_instance_type
+  zone         = data.google_compute_zones.available_zone.names[0]
   project      = local.google_cloud_project
 
   boot_disk {
     initialize_params {
-      image = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
-      type  = var.standalone_server_boot_disk_type
+      image = local.ubuntu_image
+      type  = var.standalone_disk_type
+      size  = var.standalone_disk_size
     }
   }
 
@@ -156,7 +160,7 @@ resource "google_compute_instance" "red5_standalone_server" {
   }
 
   metadata = {
-    ssh-keys = "ubuntu:${local.public_ssh_key}"
+    ssh-keys = "ubuntu:${local.ssh_public_key}"
   }
 
   provisioner "file" {
@@ -173,7 +177,7 @@ resource "google_compute_instance" "red5_standalone_server" {
     host        = self.network_interface.0.access_config.0.nat_ip
     type        = "ssh"
     user        = "ubuntu"
-    private_key = "${local.private_ssh_key}"
+    private_key = local.ssh_private_key
   }
 
   provisioner "remote-exec" {
@@ -183,22 +187,22 @@ resource "google_compute_instance" "red5_standalone_server" {
       "export LICENSE_KEY='${var.red5pro_license_key}'",
       "export NODE_API_ENABLE='${var.red5pro_api_enable}'",
       "export NODE_API_KEY='${var.red5pro_api_key}'",
-      "export NODE_INSPECTOR_ENABLE='${var.red5pro_inspector_enable}'",
-      "export NODE_RESTREAMER_ENABLE='${var.red5pro_restreamer_enable}'",
-      "export NODE_SOCIALPUSHER_ENABLE='${var.red5pro_socialpusher_enable}'",
-      "export NODE_SUPPRESSOR_ENABLE='${var.red5pro_suppressor_enable}'",
-      "export NODE_HLS_ENABLE='${var.red5pro_hls_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_ENABLE='${var.red5pro_round_trip_auth_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_HOST='${var.red5pro_round_trip_auth_host}'",
-      "export NODE_ROUND_TRIP_AUTH_PORT='${var.red5pro_round_trip_auth_port}'",
-      "export NODE_ROUND_TRIP_AUTH_PROTOCOL='${var.red5pro_round_trip_auth_protocol}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE='${var.red5pro_round_trip_auth_endpoint_validate}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE='${var.red5pro_round_trip_auth_endpoint_invalidate}'",
-      "export NODE_CLOUDSTORAGE_ENABLE='${var.red5pro_cloudstorage_enable}'",
-      "export NODE_CLOUDSTORAGE_GOOGLE_STORAGE_ACCESS_KEY='${var.red5pro_google_storage_access_key}'",
-      "export NODE_CLOUDSTORAGE_GOOGLE_STORAGE_SECRET_ACCESS_KEY='${var.red5pro_google_storage_secret_access_key}'",
-      "export NODE_CLOUDSTORAGE_GOOGLE_STORAGE_BUCKET_NAME='${var.red5pro_google_storage_bucket_name}'",
-      "export NODE_CLOUDSTORAGE_POSTPROCESSOR_ENABLE='${var.red5pro_cloudstorage_postprocessor_enable}'",
+      "export NODE_INSPECTOR_ENABLE='${var.standalone_red5pro_inspector_enable}'",
+      "export NODE_RESTREAMER_ENABLE='${var.standalone_red5pro_restreamer_enable}'",
+      "export NODE_SOCIALPUSHER_ENABLE='${var.standalone_red5pro_socialpusher_enable}'",
+      "export NODE_SUPPRESSOR_ENABLE='${var.standalone_red5pro_suppressor_enable}'",
+      "export NODE_HLS_ENABLE='${var.standalone_red5pro_hls_enable}'",
+      "export NODE_ROUND_TRIP_AUTH_ENABLE='${var.standalone_red5pro_round_trip_auth_enable}'",
+      "export NODE_ROUND_TRIP_AUTH_HOST='${var.standalone_red5pro_round_trip_auth_host}'",
+      "export NODE_ROUND_TRIP_AUTH_PORT='${var.standalone_red5pro_round_trip_auth_port}'",
+      "export NODE_ROUND_TRIP_AUTH_PROTOCOL='${var.standalone_red5pro_round_trip_auth_protocol}'",
+      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE='${var.standalone_red5pro_round_trip_auth_endpoint_validate}'",
+      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE='${var.standalone_red5pro_round_trip_auth_endpoint_invalidate}'",
+      "export NODE_CLOUDSTORAGE_ENABLE='${var.standalone_red5pro_cloudstorage_enable}'",
+      "export NODE_CLOUDSTORAGE_GOOGLE_STORAGE_ACCESS_KEY='${var.standalone_red5pro_google_storage_access_key}'",
+      "export NODE_CLOUDSTORAGE_GOOGLE_STORAGE_SECRET_ACCESS_KEY='${var.standalone_red5pro_google_storage_secret_access_key}'",
+      "export NODE_CLOUDSTORAGE_GOOGLE_STORAGE_BUCKET_NAME='${var.standalone_red5pro_google_storage_bucket_name}'",
+      "export NODE_CLOUDSTORAGE_POSTPROCESSOR_ENABLE='${var.standalone_red5pro_cloudstorage_postprocessor_enable}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
@@ -219,88 +223,102 @@ resource "google_compute_instance" "red5_standalone_server" {
       host        = self.network_interface.0.access_config.0.nat_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = "${local.private_ssh_key}"
+      private_key = local.ssh_private_key
     }
   }
-  tags            = tolist([var.new_or_existing_network_tag_for_standalone_server])
+  tags = local.standalone_server_firewall_tags
 }
 
 ################################################################################
 # Red5 Stream Manager Server Configuration
 ################################################################################
-# Create security group for stream manager
+# Create security group for Stream Manager
 resource "google_compute_firewall" "red5_stream_manager_firewall" {
-  count         = local.cluster_or_autoscale && local.stream_manager_firewall ? 1 : 0
-  name          = "${var.name}-stream-manager-firewall"
-  network       = local.vpc_network_name
+  count   = local.cluster_or_autoscale && local.stream_manager_firewall ? 1 : 0
+  name    = "${var.name}-stream-manager-firewall"
+  network = local.vpc_network_name
   allow {
-    protocol    = "icmp"
+    protocol = "icmp"
   }
   allow {
-    protocol    = "tcp"
-    ports       = var.red5_stream_manager_firewall_tcp_ports
+    protocol = "tcp"
+    ports    = var.red5_stream_manager_firewall_tcp_ports
   }
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
-  target_tags   = tolist([var.new_or_existing_network_tag_for_stream_manager])
+  target_tags   = local.stream_manager_firewall_tags
+}
+
+# Create security group for Stream Sanager SSH
+resource "google_compute_firewall" "red5_stream_manager_ssh_firewall" {
+  count   = local.cluster_or_autoscale && local.stream_manager_firewall ? 1 : 0
+  name    = "${var.name}-stream-manager-ssh-firewall"
+  network = local.vpc_network_name
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+  source_ranges = var.firewall_ssh_allowed_ip_ranges
+  project       = local.google_cloud_project
+  target_tags   = local.stream_manager_firewall_tags
 }
 
 # Reserved IP address for Stream Manager
 resource "google_compute_address" "sm_reserved_ip" {
-  count               = local.autoscale ? 0 : local.create_sm_reserved_ip ? 1 : 0
-  name                = "${var.name}-sm-reserver-ip"
-  address_type        = "EXTERNAL"
-  project             = local.google_cloud_project
-  region              = var.google_region
+  count        = local.cluster && var.stream_manager_reserved_ip_use_existing == false ? 1 : 0
+  name         = "${var.name}-sm-reserver-ip"
+  address_type = "EXTERNAL"
+  project      = local.google_cloud_project
+  region       = var.google_region
 }
 
 # Already created reserved IP for Stream Manager
 data "google_compute_address" "existing_sm_reserved_ip" {
-  count               = local.standalone ? 0 : local.autoscale ? 0 : local.create_sm_reserved_ip ? 0 : 1 
-  name                = var.existing_sm_reserved_ip_name 
-  project             = local.google_cloud_project
-  region              = var.google_region
+  count   = local.cluster && var.stream_manager_reserved_ip_use_existing ? 1 : 0
+  name    = var.stream_manager_reserved_ip_name_existing
+  project = local.google_cloud_project
+  region  = var.google_region
   lifecycle {
     postcondition {
-      condition       = self.address != null
-      error_message   = "The existing IP address with name: ${var.existing_sm_reserved_ip_name} does not exist in region ${var.google_region}." 
+      condition     = self.address != null
+      error_message = "The existing IP address with name: ${var.stream_manager_reserved_ip_name_existing} does not exist in region ${var.google_region}."
     }
   }
 }
 
 # Generate random password for Red5 Pro Stream Manager 2.0 authentication
 resource "random_password" "r5as_auth_secret" {
-  count        = local.cluster_or_autoscale ? 1 : 0
-  length       = 32
-  special      = false
+  count   = local.cluster_or_autoscale ? 1 : 0
+  length  = 32
+  special = false
 }
 
 # Red5 Pro Stream Manager Instance
 resource "google_compute_instance" "red5_stream_manager_server" {
-  count        = local.cluster_or_autoscale ? 1 : 0
-  name         = "${var.name}-stream-manager"
-  machine_type = var.stream_manager_server_instance_type
-  zone         = element(data.google_compute_zones.available_zone.names, count.index)
-  project      = local.google_cloud_project
+  count                     = local.cluster_or_autoscale ? 1 : 0
+  name                      = local.autoscale ? "${var.name}-stream-manager-image" : "${var.name}-stream-manager"
+  machine_type              = var.stream_manager_instance_type
+  zone                      = data.google_compute_zones.available_zone.names[0]
+  project                   = local.google_cloud_project
   allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {
-      image = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
-      type  = var.stream_manager_server_boot_disk_type
-      size  = var.stream_manager_server_disk_size
+      image = local.ubuntu_image
+      type  = var.stream_manager_disk_type
+      size  = var.stream_manager_disk_size
     }
   }
 
   network_interface {
     network = local.vpc_network_name
     access_config {
-      nat_ip = local.autoscale ? null : local.sm_nat_ip
+      nat_ip = local.autoscale ? null : local.stream_manager_nat_ip
     }
   }
 
   metadata = {
-    ssh-keys = "ubuntu:${local.public_ssh_key}"
+    ssh-keys = "ubuntu:${local.ssh_public_key}"
   }
 
   provisioner "file" {
@@ -312,7 +330,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     host        = self.network_interface.0.access_config.0.nat_ip
     type        = "ssh"
     user        = "ubuntu"
-    private_key = "${local.private_ssh_key}"
+    private_key = local.ssh_private_key
   }
 
   metadata_startup_script = <<-EOF
@@ -332,7 +350,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     R5AS_AUTH_PASS=${var.stream_manager_auth_password}
     TF_VAR_project_id=${var.google_project_id}
     TF_VAR_r5p_license_key=${var.red5pro_license_key}
-    TF_VAR_r5p_node_network_tag=${var.new_or_existing_network_tag_for_nodes != "null" ? var.new_or_existing_network_tag_for_nodes : "null"}
+    TF_VAR_r5p_node_network_tag=${local.red5_node_firewall_tags[0]} # We will need to update it to allow multiple tags
     TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
     TRAEFIK_HOST=${var.https_ssl_certificate_domain_name}
     TRAEFIK_SSL_EMAIL=${var.https_ssl_certificate_email}
@@ -340,17 +358,15 @@ resource "google_compute_instance" "red5_stream_manager_server" {
   EOF
 
   service_account {
-    scopes        = [ "cloud-platform" ]
+    scopes = ["cloud-platform"]
   }
-  tags             = tolist([var.new_or_existing_network_tag_for_stream_manager])
+
   lifecycle {
     ignore_changes = all
-    precondition {
-      condition     = var.stream_manager_server_disk_size >= 10
-      error_message = "The Stream Manager Disk size should not be less than 10GB"
-    }
   }
-  depends_on = [ google_compute_address.sm_reserved_ip, data.google_compute_address.existing_sm_reserved_ip ]
+
+  tags       = local.stream_manager_firewall_tags
+  depends_on = [google_compute_address.sm_reserved_ip, data.google_compute_address.existing_sm_reserved_ip]
 }
 
 resource "null_resource" "red5pro_sm_configuration" {
@@ -377,12 +393,11 @@ resource "null_resource" "red5pro_sm_configuration" {
       host        = google_compute_instance.red5_stream_manager_server[0].network_interface.0.access_config.0.nat_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = "${local.private_ssh_key}"
+      private_key = local.ssh_private_key
     }
   }
   depends_on = [tls_cert_request.kafka_server_csr, null_resource.red5pro_kafka_standalone_configuration]
 }
-
 
 ################################################################################
 # Kafka keys and certificates
@@ -498,16 +513,16 @@ resource "tls_locally_signed_cert" "kafka_server_cert" {
 }
 
 resource "google_compute_instance" "red5pro_kafka_standalone" {
-  count        = local.dedicated_red5pro_kafka_standalone ? 1 : 0
+  count        = local.kafka_standalone_instance ? 1 : 0
   name         = "${var.name}-red5-kafka-standalone"
   machine_type = var.kafka_standalone_instance_type
-  zone         = element(data.google_compute_zones.available_zone.names, count.index)
+  zone         = data.google_compute_zones.available_zone.names[0]
   project      = local.google_cloud_project
 
   boot_disk {
     initialize_params {
-      image = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
-      type  = var.kafka_standalone_boot_disk_type
+      image = local.ubuntu_image
+      type  = var.kafka_standalone_disk_type
       size  = var.kafka_standalone_disk_size
     }
   }
@@ -519,27 +534,27 @@ resource "google_compute_instance" "red5pro_kafka_standalone" {
   }
 
   metadata = {
-    ssh-keys = "ubuntu:${local.public_ssh_key}"
+    ssh-keys = "ubuntu:${local.ssh_public_key}"
   }
 
   service_account {
-    scopes = [ "cloud-platform" ]
+    scopes = ["cloud-platform"]
   }
-  tags     = tolist([var.new_or_existing_network_tag_for_kafka_standalone])
+  tags = local.kafka_standalone_firewall_tags
 }
 
 resource "null_resource" "red5pro_kafka_standalone_configuration" {
-  count           = local.dedicated_red5pro_kafka_standalone ? 1 : 0
+  count = local.kafka_standalone_instance ? 1 : 0
 
   provisioner "file" {
-    source        = "${abspath(path.module)}/red5pro-installer"
-    destination   = "/home/ubuntu"
+    source      = "${abspath(path.module)}/red5pro-installer"
+    destination = "/home/ubuntu"
 
     connection {
       host        = google_compute_instance.red5pro_kafka_standalone[0].network_interface.0.access_config.0.nat_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = "${local.private_ssh_key}"
+      private_key = local.ssh_private_key
     }
   }
 
@@ -564,30 +579,42 @@ resource "null_resource" "red5pro_kafka_standalone_configuration" {
       host        = google_compute_instance.red5pro_kafka_standalone[0].network_interface.0.access_config.0.nat_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = "${local.private_ssh_key}"
+      private_key = local.ssh_private_key
     }
   }
 
   depends_on = [tls_cert_request.kafka_server_csr]
 }
 
-resource "google_compute_firewall" "red5_kafka_standalone_firewall" {
-  count         = local.dedicated_red5pro_kafka_standalone && local.kafka_standalone_firewall ? 1 : 0
-  name          = "${var.name}-kafka-service-firewall"
-  network       = local.vpc_network_name
-  priority      = 1000
+# Create security group for Kafka Standalone server
+resource "google_compute_firewall" "kafka_standalone_firewall" {
+  count   = local.kafka_standalone_instance && local.kafka_standalone_firewall ? 1 : 0
+  name    = "${var.name}-kafka-firewall"
+  network = local.vpc_network_name
   allow {
-    protocol    = "icmp"
+    protocol = "icmp"
   }
-
   allow {
-    protocol    = "tcp"
-    ports       = var.kafka_standalone_firewall_ports
+    protocol = "tcp"
+    ports    = var.kafka_standalone_firewall_ports
   }
-
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
-  target_tags   = tolist([var.new_or_existing_network_tag_for_kafka_standalone])
+  target_tags   = local.kafka_standalone_firewall_tags
+}
+
+# Create security group for Stream Sanager SSH
+resource "google_compute_firewall" "kafka_standalone_ssh_firewall" {
+  count   = local.kafka_standalone_instance && local.kafka_standalone_firewall ? 1 : 0
+  name    = "${var.name}-kafka-ssh-firewall"
+  network = local.vpc_network_name
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+  source_ranges = var.firewall_ssh_allowed_ip_ranges
+  project       = local.google_cloud_project
+  target_tags   = local.kafka_standalone_firewall_tags
 }
 
 ################################################################################
@@ -595,33 +622,33 @@ resource "google_compute_firewall" "red5_kafka_standalone_firewall" {
 ################################################################################
 # Reserved IP address for Load Balancer
 resource "google_compute_global_address" "lb_reserved_ip" {
-  count               = local.autoscale && var.create_new_global_reserved_ip_for_lb ? 1 : 0 
-  name                = "${var.name}-lb-reserver-ip"
-  ip_version          = "IPV4"
-  address_type        = "EXTERNAL"
-  project             = local.google_cloud_project
+  count        = local.autoscale && var.lb_global_reserved_ip_use_existing ? 0 : 1
+  name         = "${var.name}-lb-reserver-ip"
+  ip_version   = "IPV4"
+  address_type = "EXTERNAL"
+  project      = local.google_cloud_project
 }
 
 # Already created reserved IP for Stream Manager
 data "google_compute_global_address" "existing_lb_reserved_ip" {
-  count               = local.standalone || local.cluster ? 0 : local.autoscale && var.create_new_global_reserved_ip_for_lb ? 0 : 1 
-  name                = var.existing_global_lb_reserved_ip_name
-  project             = local.google_cloud_project
+  count   = local.autoscale && var.lb_global_reserved_ip_use_existing ? 1 : 0
+  name    = var.lb_global_reserved_ip_name_existing
+  project = local.google_cloud_project
   lifecycle {
     postcondition {
-      condition       = self.address != null
-      error_message   = "The existing IP address with name: ${var.existing_global_lb_reserved_ip_name} does not exist." 
+      condition     = self.address != null
+      error_message = "The existing IP address with name: ${var.lb_global_reserved_ip_name_existing} does not exist."
     }
   }
 }
 
 # New SSL cerificate for Load Balancer
 resource "google_compute_ssl_certificate" "new_lb_ssl_cert" {
-  count               = local.autoscale && var.create_new_lb_ssl_cert && var.create_lb_with_ssl ? 1 : 0
-  name_prefix         = "${var.name}-lb-cert"
-  private_key         = file(var.new_ssl_private_key_path)
-  certificate         = file(var.new_ssl_certificate_key_path)
-  project             = local.google_cloud_project
+  count       = local.autoscale && var.https_ssl_certificate == "imported" ? 1 : 0
+  name_prefix = var.https_ssl_certificate_name
+  private_key = file(var.https_ssl_certificate_key_path)
+  certificate = file(var.https_ssl_certificate_cert_path)
+  project     = local.google_cloud_project
   lifecycle {
     create_before_destroy = true
   }
@@ -629,25 +656,26 @@ resource "google_compute_ssl_certificate" "new_lb_ssl_cert" {
 
 # Existing SSL cerificate for Load Balancer
 data "google_compute_ssl_certificate" "existing_ssl_lb_cert" {
-  count               = var.create_lb_with_ssl ? var.create_new_lb_ssl_cert ? 0 : 1 : 0
-  name                = var.existing_ssl_certificate_name
-  project             = local.google_cloud_project
+  count   = local.autoscale && var.https_ssl_certificate == "existing" ? 1 : 0
+  name    = var.https_ssl_certificate_name
+  project = local.google_cloud_project
 }
 
+# Template for Stream Manager
 resource "google_compute_instance_template" "stream_manager_template" {
-  count               = local.autoscale ? 1 : 0
-  name                = "${var.name}-stream-manager"
-  machine_type        = var.stream_manager_server_instance_type
-  tags                = tolist([var.new_or_existing_network_tag_for_stream_manager])
-  project             = local.google_cloud_project
+  count        = local.autoscale ? 1 : 0
+  name         = "${var.name}-stream-manager"
+  machine_type = var.stream_manager_instance_type
+  tags         = local.stream_manager_firewall_tags
+  project      = local.google_cloud_project
   metadata = {
-    ssh-keys          = "ubuntu:${local.public_ssh_key}"
+    ssh-keys = "ubuntu:${local.ssh_public_key}"
   }
-    
+
   disk {
-    auto_delete       = true
-    source_image      = google_compute_image.red5_sm_image[0].self_link
-    disk_type         = var.stream_manager_server_boot_disk_type
+    auto_delete  = true
+    source_image = google_compute_image.red5_sm_image[0].self_link
+    disk_type    = var.stream_manager_disk_type
   }
 
   network_interface {
@@ -662,7 +690,7 @@ resource "google_compute_instance_template" "stream_manager_template" {
 
   depends_on = [google_compute_image.red5_sm_image]
   lifecycle {
-    ignore_changes = [ disk ]
+    ignore_changes = [disk]
   }
 }
 
@@ -677,16 +705,35 @@ resource "google_compute_health_check" "sm_health_check" {
   unhealthy_threshold = 5
 
   http_health_check {
-    port              = 80
+    request_path = "/as/v1/admin/healthz"
+    port         = 80
   }
 }
 
-# Autoscaling Instance Group Manager
+# Autoscaler for Stream Manager
+resource "google_compute_autoscaler" "stream_manager_autoscaler" {
+  count  = local.autoscale ? 1 : 0
+  name   = "${var.name}-sm-autoscaler"
+  zone   = data.google_compute_zones.available_zone.names[0]
+  target = google_compute_instance_group_manager.stream_manager_instance_group[0].id
+
+  autoscaling_policy {
+    min_replicas    = var.stream_manager_autoscaling_min_replicas
+    max_replicas    = var.stream_manager_autoscaling_max_replicas
+    cooldown_period = 60
+
+    cpu_utilization {
+      target = 0.8
+    }
+  }
+}
+
+# Instance Group Manager for Stream Manager
 resource "google_compute_instance_group_manager" "stream_manager_instance_group" {
-  count               = local.autoscale ? 1 : 0
-  name                = "${var.name}-sm-instance-group-manager"
-  zone                = element(data.google_compute_zones.available_zone.names, count.index)
-  project             = local.google_cloud_project
+  count   = local.autoscale ? 1 : 0
+  name    = "${var.name}-sm-instance-group-manager"
+  zone    = data.google_compute_zones.available_zone.names[0]
+  project = local.google_cloud_project
 
   named_port {
     name = "${var.name}-sm-http-port"
@@ -696,8 +743,7 @@ resource "google_compute_instance_group_manager" "stream_manager_instance_group"
     instance_template = google_compute_instance_template.stream_manager_template[0].self_link_unique
     name              = "${var.name}-sm-version"
   }
-  base_instance_name  = "${var.name}-stream-manager"
-  target_size         = var.count_of_stream_managers
+  base_instance_name = "${var.name}-stream-manager"
 
   auto_healing_policies {
     health_check      = google_compute_health_check.sm_health_check[0].id
@@ -709,38 +755,38 @@ resource "google_compute_instance_group_manager" "stream_manager_instance_group"
   }
 }
 
-# Backend service for 
+# Backend service for Stream Manager
 resource "google_compute_backend_service" "sm_backend_service" {
-  count                   = local.autoscale ? 1 : 0
-  name                    = "${var.name}-backend-service"
-  project                 = local.google_cloud_project
-  protocol                = "HTTP"
-  port_name               = "${var.name}-sm-http-port"
-  load_balancing_scheme   = "EXTERNAL"
-  timeout_sec             = 60
-  enable_cdn              = false
-  health_checks           = [google_compute_health_check.sm_health_check[0].id]
+  count                 = local.autoscale ? 1 : 0
+  name                  = "${var.name}-sm-backend-service"
+  project               = local.google_cloud_project
+  protocol              = "HTTP"
+  port_name             = "${var.name}-sm-http-port"
+  load_balancing_scheme = "EXTERNAL"
+  timeout_sec           = 60
+  enable_cdn            = false
+  health_checks         = [google_compute_health_check.sm_health_check[0].id]
   backend {
-    group                 = google_compute_instance_group_manager.stream_manager_instance_group[0].instance_group
-    balancing_mode        = "UTILIZATION"
-    capacity_scaler       = 1.0
+    group           = google_compute_instance_group_manager.stream_manager_instance_group[0].instance_group
+    balancing_mode  = "UTILIZATION"
+    capacity_scaler = 1.0
   }
 }
 
 # Load Balancer URL map
 resource "google_compute_url_map" "lb_url_map" {
-  count               = local.autoscale ? 1 : 0
-  name                = "${var.name}-load-balancer-map"
-  project             = local.google_cloud_project
-  default_service     = google_compute_backend_service.sm_backend_service[0].id
+  count           = local.autoscale ? 1 : 0
+  name            = "${var.name}-load-balancer-map"
+  project         = local.google_cloud_project
+  default_service = google_compute_backend_service.sm_backend_service[0].id
 }
 
 # Load Balancer HTTP proxy
 resource "google_compute_target_http_proxy" "lb_http_proxy" {
-  count               = local.autoscale ? 1 : 0
-  name                = "${var.name}-http-proxy"
-  project             = local.google_cloud_project
-  url_map             = google_compute_url_map.lb_url_map[0].id
+  count   = local.autoscale ? 1 : 0
+  name    = "${var.name}-http-proxy"
+  project = local.google_cloud_project
+  url_map = google_compute_url_map.lb_url_map[0].id
 }
 
 # Load Balancer HTTP forwarding rule
@@ -757,16 +803,16 @@ resource "google_compute_global_forwarding_rule" "lb_http_forward_rule" {
 
 # Load Balancer HTTPS proxy
 resource "google_compute_target_https_proxy" "lb_https_proxy" {
-  count               = local.autoscale && var.create_lb_with_ssl ? 1 : 0
-  name                = "${var.name}-https-proxy"
-  project             = local.google_cloud_project
-  url_map             = google_compute_url_map.lb_url_map[0].id
-  ssl_certificates    = [local.lb_ssl_certificate]
+  count            = local.autoscale && var.https_ssl_certificate != "none" ? 1 : 0
+  name             = "${var.name}-https-proxy"
+  project          = local.google_cloud_project
+  url_map          = google_compute_url_map.lb_url_map[0].id
+  ssl_certificates = [var.https_ssl_certificate == "imported" ? google_compute_ssl_certificate.new_lb_ssl_cert[0].id : var.https_ssl_certificate == "existing" ? data.google_compute_ssl_certificate.existing_ssl_lb_cert[0].id : null]
 }
 
 # Load Balancer forwarding rule
 resource "google_compute_global_forwarding_rule" "lb_https_forward_rule" {
-  count                 = local.autoscale && var.create_lb_with_ssl ? 1 : 0
+  count                 = local.autoscale && var.https_ssl_certificate != "none" ? 1 : 0
   name                  = "${var.name}-forwarding-rule-https"
   project               = local.google_cloud_project
   ip_protocol           = "TCP"
@@ -776,45 +822,57 @@ resource "google_compute_global_forwarding_rule" "lb_https_forward_rule" {
   ip_address            = local.lb_ip_address
 }
 
-
 ################################################################################
 # Red5 Node Server Configuration
 ################################################################################
-# Create security group for nodes
+# Create security group for Nodes
 resource "google_compute_firewall" "red5_node_firewall" {
-  count         = local.cluster_or_autoscale && local.red5_node_firewall? 1 : 0
-  name          = "${var.name}-node-firewall"
-  network       = local.vpc_network_name
-  priority      = 1000
+  count   = local.cluster_or_autoscale && local.red5_node_firewall ? 1 : 0
+  name    = "${var.name}-node-firewall"
+  network = local.vpc_network_name
   allow {
-    protocol    = "icmp"
+    protocol = "icmp"
   }
   allow {
-    protocol    = "tcp"
-    ports       = var.red5_node_firewall_tcp_ports
+    protocol = "tcp"
+    ports    = var.red5_node_firewall_tcp_ports
   }
   allow {
-    protocol    = "udp"
-    ports       = var.red5_node_firewall_udp_ports
+    protocol = "udp"
+    ports    = var.red5_node_firewall_udp_ports
   }
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
-  target_tags = var.new_or_existing_network_tag_for_nodes != "null" ? tolist([var.new_or_existing_network_tag_for_nodes]) : []
-
+  target_tags   = local.red5_node_firewall_tags
 }
 
-# Red5 Pro Node server instance
+# Create security group for Nodes SSH
+resource "google_compute_firewall" "red5_node_ssh_firewall" {
+  count   = local.cluster_or_autoscale && local.red5_node_firewall ? 1 : 0
+  name    = "${var.name}-node-ssh-firewall"
+  network = local.vpc_network_name
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+  source_ranges = var.firewall_ssh_allowed_ip_ranges
+  project       = local.google_cloud_project
+  target_tags   = local.red5_node_firewall_tags
+}
+
+# Red5 Pro Node image
 resource "google_compute_instance" "red5_node_server" {
   count        = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   name         = "${var.name}-node-image"
-  machine_type = var.node_server_instance_type
-  zone         = element(data.google_compute_zones.available_zone.names, count.index)
+  machine_type = var.node_image_instance_type
+  zone         = data.google_compute_zones.available_zone.names[0]
   project      = local.google_cloud_project
 
   boot_disk {
     initialize_params {
-      image = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
-      type  = var.node_server_boot_disk_type
+      image = local.ubuntu_image
+      type  = var.node_image_disk_type
+      size  = var.node_image_disk_size
     }
   }
 
@@ -825,7 +883,7 @@ resource "google_compute_instance" "red5_node_server" {
   }
 
   metadata = {
-    ssh-keys = "ubuntu:${local.public_ssh_key}"
+    ssh-keys = "ubuntu:${local.ssh_public_key}"
   }
 
   provisioner "file" {
@@ -842,7 +900,7 @@ resource "google_compute_instance" "red5_node_server" {
     host        = self.network_interface.0.access_config.0.nat_ip
     type        = "ssh"
     user        = "ubuntu"
-    private_key = "${local.private_ssh_key}"
+    private_key = local.ssh_private_key
   }
 
   provisioner "remote-exec" {
@@ -862,13 +920,13 @@ resource "google_compute_instance" "red5_node_server" {
       host        = self.network_interface.0.access_config.0.nat_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = "${local.private_ssh_key}"
+      private_key = local.ssh_private_key
     }
   }
   lifecycle {
     ignore_changes = all
   }
-  tags             = tolist([var.new_or_existing_network_tag_for_nodes])
+  tags = local.red5_node_firewall_tags
 }
 
 #################################################################################################
@@ -876,20 +934,20 @@ resource "google_compute_instance" "red5_node_server" {
 #################################################################################################
 # Stop Stream Manager virtual machine Gcloud CLI
 resource "null_resource" "delete_stream_manager" {
-  count        = local.autoscale ? 1 : 0
+  count = local.autoscale ? 1 : 0
   provisioner "local-exec" {
-    command    = "gcloud compute instances delete ${google_compute_instance.red5_stream_manager_server[0].name} --zone=${google_compute_instance.red5_stream_manager_server[0].zone} --keep-disks=all --quiet"
+    command = "gcloud compute instances delete ${google_compute_instance.red5_stream_manager_server[0].name} --zone=${google_compute_instance.red5_stream_manager_server[0].zone} --keep-disks=all --quiet"
   }
-  depends_on   = [google_compute_instance.red5_stream_manager_server[0], null_resource.red5pro_sm_configuration[0]]
+  depends_on = [google_compute_instance.red5_stream_manager_server[0], null_resource.red5pro_sm_configuration[0]]
 }
 
 # Stop Node virtual machine Gcloud CLI
 resource "null_resource" "delete_red5_node_instance" {
-  count        = local.cluster_or_autoscale && var.node_image_create  ? 1 : 0
+  count = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   provisioner "local-exec" {
-    command    = "gcloud compute instances delete ${google_compute_instance.red5_node_server[0].name} --zone=${google_compute_instance.red5_node_server[0].zone} --keep-disks=all --quiet"
+    command = "gcloud compute instances delete ${google_compute_instance.red5_node_server[0].name} --zone=${google_compute_instance.red5_node_server[0].zone} --keep-disks=all --quiet"
   }
-  depends_on   = [google_compute_instance.red5_node_server[0]]
+  depends_on = [google_compute_instance.red5_node_server[0]]
 }
 
 #########################################################################################################
@@ -897,21 +955,20 @@ resource "null_resource" "delete_red5_node_instance" {
 #########################################################################################################
 # Delete Stream Manager virtual machine disk Gcloud CLI
 resource "null_resource" "delete_stream_manager_disk" {
-  count        = local.autoscale ? 1 : 0
+  count = local.autoscale ? 1 : 0
   provisioner "local-exec" {
-    command    = "gcloud compute disks delete ${google_compute_instance.red5_stream_manager_server[0].name} --zone=${google_compute_instance.red5_stream_manager_server[0].zone} --quiet"
+    command = "gcloud compute disks delete ${google_compute_instance.red5_stream_manager_server[0].name} --zone=${google_compute_instance.red5_stream_manager_server[0].zone} --quiet"
   }
-  depends_on   = [google_compute_image.red5_sm_image[0], null_resource.red5pro_sm_configuration[0]]
+  depends_on = [google_compute_image.red5_sm_image[0], null_resource.red5pro_sm_configuration[0]]
 }
-
 
 # Delete Origin node virtual machine disk Gcloud CLI
 resource "null_resource" "delete_red5_node_disk" {
-  count        = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
+  count = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   provisioner "local-exec" {
-    command    = "gcloud compute disks delete ${google_compute_instance.red5_node_server[0].name} --zone=${google_compute_instance.red5_node_server[0].zone} --quiet"
+    command = "gcloud compute disks delete ${google_compute_instance.red5_node_server[0].name} --zone=${google_compute_instance.red5_node_server[0].zone} --quiet"
   }
-  depends_on   = [google_compute_image.red5_node_image[0]]
+  depends_on = [google_compute_image.red5_node_image[0]]
 }
 
 ####################################################################################################
@@ -919,11 +976,11 @@ resource "null_resource" "delete_red5_node_disk" {
 ####################################################################################################
 # Stream Manager Image
 resource "google_compute_image" "red5_sm_image" {
-  count        = local.autoscale ? 1 : 0
-  name         = "${var.name}-sm-image-${formatdate("DDMMYY-hhmm", timestamp())}"
-  project      = local.google_cloud_project
-  source_disk  = google_compute_instance.red5_stream_manager_server[0].boot_disk.0.source
-  depends_on   = [null_resource.delete_stream_manager[0], null_resource.red5pro_sm_configuration[0]]
+  count       = local.autoscale ? 1 : 0
+  name        = "${var.name}-sm-image-${formatdate("DDMMYY-hhmm", timestamp())}"
+  project     = local.google_cloud_project
+  source_disk = google_compute_instance.red5_stream_manager_server[0].boot_disk.0.source
+  depends_on  = [null_resource.delete_stream_manager[0], null_resource.red5pro_sm_configuration[0]]
 
   lifecycle {
     ignore_changes = [name, source_disk]
@@ -932,11 +989,11 @@ resource "google_compute_image" "red5_sm_image" {
 
 # Red5 Node - Image
 resource "google_compute_image" "red5_node_image" {
-  count        = var.node_image_create ? 1 : 0
-  name         = "${var.name}-node-image-${formatdate("DDMMYY-hhmm", timestamp())}"
-  project      = local.google_cloud_project
-  source_disk  = google_compute_instance.red5_node_server[0].boot_disk.0.source
-  depends_on   = [null_resource.delete_red5_node_instance[0]]
+  count       = var.node_image_create ? 1 : 0
+  name        = "${var.name}-node-image-${formatdate("DDMMYY-hhmm", timestamp())}"
+  project     = local.google_cloud_project
+  source_disk = google_compute_instance.red5_node_server[0].boot_disk.0.source
+  depends_on  = [null_resource.delete_red5_node_instance[0]]
 
   lifecycle {
     ignore_changes = [name, source_disk]
@@ -964,7 +1021,7 @@ resource "time_sleep" "wait_for_delete_nodegroup" {
     google_compute_instance.red5pro_kafka_standalone[0],
     null_resource.red5pro_kafka_standalone_configuration[0],
     null_resource.red5pro_sm_configuration[0],
-    google_compute_firewall.red5_kafka_standalone_firewall[0]
+    google_compute_firewall.kafka_standalone_firewall[0]
   ]
   destroy_duration = "120s"
 }
@@ -973,16 +1030,15 @@ resource "null_resource" "node_group" {
   count = local.cluster_or_autoscale && var.node_group_create ? 1 : 0
   triggers = {
     trigger_name   = "node-group-trigger"
-    SM_URL         = "${local.stream_manager_url}"
+    SM_IP          = "${local.stream_manager_ip}"
     R5AS_AUTH_USER = "${var.stream_manager_auth_user}"
     R5AS_AUTH_PASS = "${var.stream_manager_auth_password}"
-    SM_URL_DESTROY = "${local.stream_manager_url_destroy}"
   }
   provisioner "local-exec" {
     when    = create
     command = "bash ${abspath(path.module)}/red5pro-installer/r5p_create_node_group.sh"
     environment = {
-      SM_URL                                   = "${local.stream_manager_url}"
+      SM_IP                                    = "${local.stream_manager_ip}"
       R5AS_AUTH_USER                           = "${var.stream_manager_auth_user}"
       R5AS_AUTH_PASS                           = "${var.stream_manager_auth_password}"
       NODE_GROUP_REGION                        = "${var.google_region}"
@@ -992,19 +1048,19 @@ resource "null_resource" "node_group" {
       ORIGINS_MIN                              = "${var.node_group_origins_min}"
       ORIGINS_MAX                              = "${var.node_group_origins_max}"
       ORIGIN_INSTANCE_TYPE                     = "${var.node_group_origins_instance_type}"
-      ORIGIN_VOLUME_SIZE                       = "${var.node_group_origins_volume_size}"
+      ORIGIN_VOLUME_SIZE                       = "${var.node_group_origins_disk_size}"
       EDGES_MIN                                = "${var.node_group_edges_min}"
       EDGES_MAX                                = "${var.node_group_edges_max}"
       EDGE_INSTANCE_TYPE                       = "${var.node_group_edges_instance_type}"
-      EDGE_VOLUME_SIZE                         = "${var.node_group_edges_volume_size}"
+      EDGE_VOLUME_SIZE                         = "${var.node_group_edges_disk_size}"
       TRANSCODERS_MIN                          = "${var.node_group_transcoders_min}"
       TRANSCODERS_MAX                          = "${var.node_group_transcoders_max}"
       TRANSCODER_INSTANCE_TYPE                 = "${var.node_group_transcoders_instance_type}"
-      TRANSCODER_VOLUME_SIZE                   = "${var.node_group_transcoders_volume_size}"
+      TRANSCODER_VOLUME_SIZE                   = "${var.node_group_transcoders_disk_size}"
       RELAYS_MIN                               = "${var.node_group_relays_min}"
       RELAYS_MAX                               = "${var.node_group_relays_max}"
       RELAY_INSTANCE_TYPE                      = "${var.node_group_relays_instance_type}"
-      RELAY_VOLUME_SIZE                        = "${var.node_group_relays_volume_size}"
+      RELAY_VOLUME_SIZE                        = "${var.node_group_relays_disk_size}"
       PATH_TO_JSON_TEMPLATES                   = "${abspath(path.module)}/red5pro-installer/nodegroup-json-templates"
       NODE_ROUND_TRIP_AUTH_ENABLE              = "${var.node_config_round_trip_auth.enable}"
       NODE_ROUNT_TRIP_AUTH_TARGET_NODES        = "${join(",", var.node_config_round_trip_auth.target_nodes)}"
@@ -1029,7 +1085,7 @@ resource "null_resource" "node_group" {
 
   provisioner "local-exec" {
     when    = destroy
-    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_URL_DESTROY}' '${self.triggers.R5AS_AUTH_USER}' '${self.triggers.R5AS_AUTH_PASS}'"
+    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_IP}' '${self.triggers.R5AS_AUTH_USER}' '${self.triggers.R5AS_AUTH_PASS}'"
   }
 
   depends_on = [time_sleep.wait_for_delete_nodegroup[0]]

@@ -7,7 +7,7 @@
 # Date: 2024-11-07
 ############################################################################################################
 
-# SM_URL="https://red5pro.example.com"
+# SM_IP="1.2.3.4"
 # R5AS_AUTH_USER="user"
 # R5AS_AUTH_PASS="password"
 
@@ -364,23 +364,26 @@ oetr)
 esac
 
 check_stream_manager() {
-    SM_STATUS_URL="$SM_URL/as/v1/admin/healthz"
-
-    log_i "Checking Stream Manager status. URL: $SM_STATUS_URL"
+    log_i "Checking Stream Manager status."
 
     for i in {1..20}; do
-        curl --insecure -s -m 5 -o /dev/null -w "%{http_code}" "$SM_STATUS_URL" >/dev/null
-        if [ $? -eq 0 ]; then
-            code_resp=$(curl --insecure -s -o /dev/null -w "%{http_code}" "$SM_STATUS_URL")
-            if [ "$code_resp" -eq 200 ]; then
-                log_i "Stream Manager is running. Status code: $code_resp"
-                break
-            else
-                log_i "Stream Manager is not running. Status code: $code_resp"
-            fi
-        else
-            log_w "Stream Manager is not running! - Attempt $i"
+        # Check HTTPS
+        https_response=$(curl -s -m 5 -o /dev/null -w "%{http_code}" --insecure "https://$SM_IP/as/v1/admin/healthz")
+        if [ "$https_response" -eq 200 ]; then
+            SM_URL="https://$SM_IP"
+            log_i "SM URL is accessible over HTTPS: $SM_URL"
+            break
         fi
+
+        # Check HTTP
+        http_response=$(curl -s -m 5 -o /dev/null -w "%{http_code}" "http://$SM_IP/as/v1/admin/healthz")
+        if [ "$http_response" -eq 200 ]; then
+            SM_URL="http://$SM_IP"
+            log_i "SM URL is accessible over HTTP: $SM_URL"
+            break
+        fi
+
+        log_w "Stream Manager is not running! - Attempt $i"
 
         if [ "$i" -eq 20 ]; then
             log_e "EXIT..."
@@ -475,7 +478,7 @@ check_node_group() {
             break
         fi
 
-        if [[ $i -eq 10 ]]; then
+        if [[ $i -eq 20 ]]; then
             log_e "Something wrong with nodes states. (SM2.0 was not able to create nodes or nodes can't connect to SM). EXIT..."
             exit 1
         fi

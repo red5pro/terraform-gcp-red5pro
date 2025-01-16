@@ -3,6 +3,66 @@
 
 This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/docs/installation/installation/googlecloudvminstall/) that provisions infrastucture over [Google Cloud(Gcloud)](https://console.cloud.google.com/).
 
+## Preparation
+
+### Install Terraform
+
+- Visit the [Terraform download page](https://developer.hashicorp.com/terraform/downloads) and ensure you get version 1.7.5 or higher.
+- Download the suitable version for your operating system.
+- Extract the compressed file and copy the Terraform binary to a location within your system's PATH.
+- Configure PATH for **Linux/macOS**:
+  - Open a terminal and type the following command:
+
+    ```sh
+    sudo mv /path/to/terraform /usr/local/bin
+    ```
+
+- Configure PATH for **Windows**:
+  - Click 'Start', search for 'Control Panel', and open it.
+  - Navigate to `System > Advanced System Settings > Environment Variables`.
+  - Under System variables, find 'PATH' and click 'Edit'.
+  - Click 'New' and paste the directory location where you extracted the terraform.exe file.
+  - Confirm changes by clicking 'OK' and close all open windows.
+  - Open a new terminal and verify that Terraform has been successfully installed.
+
+  ```sh
+  terraform --version
+  ```
+
+### Install jq
+
+- Install **jq** (Linux or Mac OS only) [Download](https://jqlang.github.io/jq/download/)
+  - Linux: `apt install jq`
+  - MacOS: `brew install jq`
+  > It is used in bash scripts to create/delete Stream Manager node group using API
+
+### Red5 Pro artifacts
+
+- Download Red5 Pro server build in your [Red5 Pro Account](https://account.red5.net/downloads). Example: `red5pro-server-0.0.0.b0-release.zip`
+- Get Red5 Pro License key in your [Red5 Pro Account](https://account.red5.net/downloads). Example: `1111-2222-3333-4444`
+
+### Install Google Cloud SDK (GCP CLI)
+
+- [Installing the CLI](https://cloud.google.com/sdk/docs/install)
+
+### Prepare GCP Account
+
+- Create a service account for the Terraform module. The service account must have permission to create and manage the following resources:
+  - Identity and Access Management Rights
+    - Virtual Private Cloud (VPC)
+    - Compute Engine Instances
+    - Instance Templates
+    - Autoscaling Configurations
+    - Load Balancers
+    - SSL Certificates
+
+- Obtain the necessary credentials and information:
+  - Service Account with appropriate roles (e.g., `roles/editor` or custom roles with the above permissions)
+  - Generate and download a JSON key file for the service account
+  - Project ID  
+  - Region  
+  - Zone
+
 ## This module has 3 variants of Red5 Pro deployments
 
 * **standalone** - Single instance with installed and configured Red5 Pro server
@@ -11,63 +71,32 @@ This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/d
 
 ---
 
-## Preparation
-
-* Install **terraform** https://developer.hashicorp.com/terraform/downloads
-  * Open your web browser and visit the [Terraform download page](https://developer.hashicorp.com/terraform/downloads), ensuring you get version 1.0.0 or higher. 
-  * Download the suitable version for your operating system, 
-  * Extract the compressed file, and then copy the Terraform binary to a location within your system's path
-    * Configure path on Linux/macOS 
-      * Open a terminal and type the following:
-
-        ```$ sudo mv /path/to/terraform /usr/local/bin```
-    * Configure path on Windows OS
-      * Click 'Start', search for 'Control Panel', and open it.
-      * Navigate to System > Advanced System Settings > Environment Variables.
-      * Under System variables, find 'PATH' and click 'Edit'.
-      * Click 'New' and paste the directory location where you extracted the terraform.exe file.
-      * Confirm changes by clicking 'OK' and close all open windows.
-      * Open a new terminal and verify that Terraform has been successfully installed.
-
-* Install **Google Cloud CLI** https://cloud.google.com/sdk/docs/install
-* Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is using in bash scripts to create/delete Stream Manager node group using API)
-* Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5.net/downloads
-* Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5.net
-* Login to Goolge Cloud CLI (To login to CLI follow the below documents or use the below mentioned command) 
-  * Follow the documentation for CLI login - https://cloud.google.com/sdk/gcloud/reference/auth/login
-  * Google CLI login command `gcloud auth login`
-    * Open the mentioned link in your browser:
-      * Copy the `authorization code` from the browser and specify in the CLI prompt. After the successful login you will see your google cloud email detail and your cuurent project information
-    * To change the current project in CLI use the below command to set the different project in CLI
-      * To set different project use command `gcloud config set project PROJECT_ID`. 
-* Copy Red5 Pro server build and Terraform Cloud controller to the root folder of your project
-
-Example:  
-
-```bash
-cp ~/Downloads/red5pro-server-0.0.0.b0-release.zip ./
-```
-
 ## Standalone Red5 Pro server deployment (Standalone) - [Example](https://github.com/red5pro/terraform-gcp-red5pro/tree/master/examples/standalone)
 
-* **VPC** - This Terrform module can either create a new or use your existing VPC. If you wish to create a new VPC, set `vpc_create` to `true`, and the script will ignore the other VPC configurations. To use your existing VPC, set `vpc_create` to `false` and include your existing vpc name.
-* **SSH Keys** -This terraform module can create a new SSH keys or use the already created SSH keys.
-* **Firewall** - This Terrform module create a new firewall for standalone server in Google Cloud.
-* **Instance Size** - Select the appropriate instance size based on the usecase from Google Cloud.
-* **SSL Certificates** - SSL certificate for Standalone Red5 Pro server instance. Options:
-  - `none` - Red5 Pro server without HTTPS and SSL certificate. Only HTTP on port `5080`
-  - `letsencrypt` - Red5 Pro server with HTTPS and SSL certificate obtained by Let's Encrypt. HTTP on port `5080`, HTTPS on port `443`
-  - `imported` - Red5 Pro server with HTTPS and imported SSL certificate. HTTP on port `5080`, HTTPS on port `443`
+In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5.net/docs/installation/).
 
-## Usage (standalone)
+#### Terraform Deployed Resources (standalone)
 
-```hcl
+- VPC 
+- Public Subnet  
+- Cloud Router 
+- Firewall for Standalone Red5 Pro Server  
+- SSH Key Pair (use existing or create a new one)  
+- Standalone Red5 Pro Server Instance  
+- SSL Certificate for Standalone Red5 Pro Server Instance. Options:  
+  - `none`: Red5 Pro server without HTTPS and SSL certificate. Only HTTP on port `5080`  
+  - `letsencrypt`: Red5 Pro server with HTTPS and SSL certificate obtained by Let's Encrypt. HTTP on port `5080`, HTTPS on port `443`  
+  - `imported`: Red5 Pro server with HTTPS and imported SSL certificate. HTTP on port `5080`, HTTPS on port `443`
+
+#### Example main.tf (standalone)
+
+```yaml
 provider "google" {
   project = "example-gcp-project-name" # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 }
 
 module "red5pro" {
-  source            = "red5pro/red5pro/gcp"
+  source            = "../../"
   google_region     = "us-west2"                 # Google region where resources will create eg: us-west2
   google_project_id = "example-gcp-project-name" # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
@@ -137,32 +166,41 @@ output "module_output" {
   value = module.red5pro
 }
 ```
-
 ---
 
 ## Red5 Pro Stream Manager cluster deployment (cluster) - [Example](https://github.com/red5pro/terraform-gcp-red5pro/tree/master/examples/cluster)
 
-* **VPC** - This Terrform module can either create a new or use your existing VPC. If you wish to create a new VPC, set `vpc_create` to `true`, and the script will ignore the other VPC configurations. To use your existing VPC, set `vpc_create` to `false` and include your existing vpc name.
-* **SSH Keys** -This terraform module can create a new SSH keys or use the already created SSH keys.
-* **Firewall** - This Terrform module create a new firewall for Red5 node, stream manager and kafka server in Google Cloud.
-* **Instance Size** - Select the appropriate instance size based on the usecase from Google Cloud.
-* **Stream Manager** - Instance will be created automatically for Stream Manager
-* **Kafka Server** - Users can choose to create a dedicated instance for Kafka Server or install it locally on the Stream Manager
-* **Red5 Node Image** - To create Google Cloud(Gcloud) custom image of Node for Stream Manager node group
-* **SSL Certificates** - SSL certificate for Standalone Red5 Pro server instance. Options:
-  - `none` - Stream Manager 2.0 without HTTPS and SSL certificate. Only HTTP on port `80`
-  - `letsencrypt` - Stream Manager 2.0 with HTTPS and SSL certificate obtained by Let's Encrypt. HTTP on port `80`, HTTPS on port `443`
-  - `imported` - Stream Manager 2.0 with HTTPS and imported SSL certificate. HTTP on port `80`, HTTPS on port `443`
+In the following example, Terraform module will automates the infrastructure provisioning of the Stream Manager 2.0 cluster with Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
 
-## Usage (cluster)
+#### Terraform Deployed Resources (cluster)
 
-```hcl
+- VPC
+- Public Subnet
+- Cloud Router 
+- Firewall Rules
+  - Stream Manager 2.0
+  - Kafka
+  - Red5 Pro (SM2.0) Autoscaling Nodes
+- SSH key pair (use existing or create a new one)
+- Standalone Kafka instance
+- Autoscaling configuration for Nodegroup instances
+- HTTP(S) Load Balancer for Stream Manager 2.0 instances
+- SSL Certificate for HTTP(S) Load Balancer:
+  - `none`: Load Balancer without HTTPS and SSL certificate (HTTP on port `80`)
+  - `letsencrypt`: Stream Manager 2.0 with HTTPS and SSL certificate obtained by Let's Encrypt. HTTP on port `80`, HTTPS on port `443`
+  - `imported`: Load Balancer with HTTPS using an imported SSL certificate (HTTP on port `80`, HTTPS on port `443`)
+- Red5 Pro (SM2.0) Node instance image (origins, edges, transcoders, relays)
+- Red5 Pro (SM2.0) Autoscaling Node group (origins, edges, transcoders, relays)
+
+#### Example main.tf (cluster)
+
+```yaml
 provider "google" {
   project = "example-gcp-project-name" # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 }
 
 module "red5pro" {
-  source            = "red5pro/red5pro/gcp"
+  source            = "../../"
   google_region     = "us-west2"                 # Google region where resources will create eg: us-west2
   google_project_id = "example-gcp-project-name" # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
@@ -289,28 +327,39 @@ output "module_output" {
 
 ## Red5 Pro Stream Manager autoscale deployment (autoscale) - [Example](https://github.com/red5pro/terraform-gcp-red5pro/tree/master/examples/autoscale)
 
-* **VPC** - This Terrform module can either create a new or use your existing VPC. If you wish to create a new VPC, set `vpc_create` to `true`, and the script will ignore the other VPC configurations. To use your existing VPC, set `vpc_create` to `false` and include your existing vpc name.
-* **SSH Keys** -This terraform module can create a new SSH keys or use the already created SSH keys.
-* **Firewall** - This Terrform module create a new firewall for Red5 node, stream manager and kafka server in Google Cloud.
-* **Instance Size** - Select the appropriate instance size based on the usecase from Google Cloud.
-* **Load Balancer** -  This Terrform module create a Load Balancer for Stream Manager in Google Cloud.
-* **Stream Manager** - Instance will be created automatically for Stream Manager
-* **Kafka Server** - This will create a dedicated instance for Kafka Service
-* **Red5 Node Image** - To create Google Cloud(Gcloud) custom image of Node for Stream Manager node group
-* **SSL Certificates** - SSL certificate for Standalone Red5 Pro server instance. Options:
-  - `none` - Stream Manager 2.0 without HTTPS and SSL certificate. Only HTTP on port `80`
-  - `imported` - Stream Manager 2.0 with HTTPS and imported SSL certificate. HTTP on port `80`, HTTPS on port `443`
+In the following example, Terraform module will automates the infrastructure provisioning of the Autoscale Stream Managers 2.0 with Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
 
+#### Terraform Deployed Resources (autoscale)
 
-## Usage (autoscale)
+- VPC
+- Public Subnet
+- Cloud Router 
+- Firewall Rules
+  - Stream Manager 2.0
+  - Kafka
+  - Red5 Pro (SM2.0) Autoscaling Nodes
+- SSH key pair (use existing or create a new one)
+- Standalone Kafka instance
+- Stream Manager 2.0 instance image
+- Instance pool for Stream Manager 2.0 instances
+- Autoscaling configuration for Stream Manager 2.0 instances
+- HTTP(S) Load Balancer for Stream Manager 2.0 instances
+- SSL Certificate for HTTP(S) Load Balancer. Options:
+  - `none` - HTTP(S) Load Balancer without HTTPS and SSL certificate. Only HTTP on port `80`.
+  - `imported` - HTTP(S) Load Balancer with HTTPS and an imported SSL certificate in Google Cloud Certificate Manager. HTTP on port `80`, HTTPS on port `443`.
+  - `existing` - HTTP(S) Load Balancer with HTTPS using an existing SSL certificate in Google Cloud Certificate Manager. HTTP on port `80`, HTTPS on port `443`.
+- Red5 Pro (SM2.0) Node instance image (origins, edges, transcoders, relays)
+- Red5 Pro (SM2.0) Autoscaling Node group (origins, edges, transcoders, relay)
 
-```hcl
+#### Example main.tf (autoscale)
+
+```yaml
 provider "google" {
   project = "example-gcp-project-name" # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 }
 
 module "red5pro" {
-  source            = "red5pro/red5pro/gcp"
+  source            = "../../"
   google_region     = "us-west2"                 # Google region where resources will create eg: us-west2
   google_project_id = "example-gcp-project-name" # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
@@ -435,11 +484,11 @@ output "module_output" {
   value = module.red5pro
 }
 ```
-
 ---
 
 **NOTES**
 
-* To activate HTTPS/SSL you need to add DNS A record for Reserved IP address
+> - WebRTC broadcast does not work in WEB browsers without an HTTPS (SSL) certificate.
+> - To activate HTTPS/SSL, you need to add a DNS A record for the Public/Reserved IP address of your Red5 Pro server or Stream Manager 2.0.
 
 ---

@@ -540,13 +540,9 @@ variable "firewall_nodes_network_tags_use_existing" {
   default     = false
 }
 variable "firewall_nodes_network_tags_existing" {
-  description = "Specify existing Firewall network Tags for Red5 Pro nodes. Supports only 1 network tag for Nodes in current SM2.0 version"
+  description = "Specify existing Firewall network Tags for Red5 Pro nodes."
   type        = list(string)
   default     = []
-  validation {
-    condition     = length(var.firewall_nodes_network_tags_existing) < 2
-    error_message = "The firewall_nodes_network_tags_existing supports only 1 network tag"
-  }
 }
 
 # Extra configuration for Red5 Pro autoscaling nodes

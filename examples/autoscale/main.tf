@@ -31,7 +31,7 @@ module "red5pro" {
   firewall_kafka_network_tags_use_existing          = false                              # true - use existing firewall network tags, false - create new firewall network tags
   firewall_kafka_network_tags_existing              = ["example-tag-1", "example-tag-2"] # Existing network tags name for firewall configuration
   firewall_nodes_network_tags_use_existing          = false                              # true - use existing firewall network tags, false - create new firewall network tags
-  firewall_nodes_network_tags_existing              = ["example-tag-1"]                  # Existing network tags name for firewall configuration
+  firewall_nodes_network_tags_existing              = ["example-tag-1", "example-tag-2"] # Existing network tags name for firewall configuration
 
   # Red5 Pro general configuration
   red5pro_license_key = "1111-2222-3333-4444" # Red5 Pro license key (https://account.red5.net/login)

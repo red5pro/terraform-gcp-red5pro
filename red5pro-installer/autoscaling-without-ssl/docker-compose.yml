@@ -134,9 +134,9 @@ services:
       R5AS_SASL_PASSWORD: ${KAFKA_CLIENT_PASSWORD}
       R5AS_SASL_ENABLED_MECHANISMS: PLAIN 
       R5AS_COMMAND_INACTIVITY_GAP_MS: 10000
-      TF_VAR_project_id: ${TF_VAR_project_id:?Ensure TF_VAR_project_id is set}
+      TF_VAR_gcp_project_id: ${TF_VAR_gcp_project_id:?Ensure TF_VAR_gcp_project_id is set}
       TF_VAR_r5p_license_key: ${TF_VAR_r5p_license_key:?Ensure TF_VAR_r5p_license_key is set to the Red5 Pro license key}
-      TF_VAR_r5p_node_network_tag: ${TF_VAR_r5p_node_network_tag:?Ensure TF_VAR_r5p_node_network_tag is set}
+      TF_VAR_gcp_node_network_tag: ${TF_VAR_gcp_node_network_tag:?Ensure TF_VAR_gcp_node_network_tag is set}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 

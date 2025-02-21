@@ -348,9 +348,8 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     R5AS_AUTH_SECRET=${random_password.r5as_auth_secret[0].result}
     R5AS_AUTH_USER=${var.stream_manager_auth_user}
     R5AS_AUTH_PASS=${var.stream_manager_auth_password}
-    TF_VAR_project_id=${var.google_project_id}
+    TF_VAR_gcp_project_id=${var.google_project_id}
     TF_VAR_r5p_license_key=${var.red5pro_license_key}
-    TF_VAR_r5p_node_network_tag=${local.red5_node_firewall_tags[0]} # We will need to update it to allow multiple tags
     TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
     TRAEFIK_HOST=${var.https_ssl_certificate_domain_name}
     TRAEFIK_SSL_EMAIL=${var.https_ssl_certificate_email}
@@ -382,6 +381,7 @@ resource "null_resource" "red5pro_sm_configuration" {
       "echo 'KAFKA_REPLICAS=${local.kafka_on_sm_replicas}' | sudo tee -a /usr/local/stream-manager/.env",
       "echo 'KAFKA_IP=${local.kafka_ip}' | sudo tee -a /usr/local/stream-manager/.env",
       "echo 'TRAEFIK_IP=${local.stream_manager_ip}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'TF_VAR_gcp_node_network_tag=${jsonencode(local.red5_node_firewall_tags)}' | sudo tee -a /usr/local/stream-manager/.env",
       "export SM_SSL='${local.stream_manager_ssl}'",
       "export SM_STANDALONE='${local.stream_manager_standalone}'",
       "export SM_SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",

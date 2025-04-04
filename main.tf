@@ -348,6 +348,8 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     R5AS_AUTH_SECRET=${random_password.r5as_auth_secret[0].result}
     R5AS_AUTH_USER=${var.stream_manager_auth_user}
     R5AS_AUTH_PASS=${var.stream_manager_auth_password}
+    R5AS_PROXY_USER=${random_string.proxy_admin_username[0].result}
+    R5AS_PROXY_PASS=${random_id.proxy_admin_password[0].id}
     TF_VAR_gcp_project_id=${var.google_project_id}
     TF_VAR_r5p_license_key=${var.red5pro_license_key}
     TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
@@ -412,6 +414,14 @@ resource "random_string" "kafka_admin_username" {
   lower   = true
   numeric = false
 }
+resource "random_string" "proxy_admin_username" {
+  count   = local.cluster_or_autoscale ? 1 : 0
+  length  = 8
+  special = false
+  upper   = false
+  lower   = true
+  numeric = false
+}
 
 # Generate random client usernames for Kafka cluster
 resource "random_string" "kafka_client_username" {
@@ -431,6 +441,10 @@ resource "random_id" "kafka_cluster_id" {
 
 # Generate random passwords for Kafka cluster
 resource "random_id" "kafka_admin_password" {
+  count       = local.cluster_or_autoscale ? 1 : 0
+  byte_length = 16
+}
+resource "random_id" "proxy_admin_password" {
   count       = local.cluster_or_autoscale ? 1 : 0
   byte_length = 16
 }

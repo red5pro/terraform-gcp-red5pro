@@ -151,6 +151,19 @@ services:
     environment:
       # R5AS_AUTOSCALE_DOMAIN: ${R5AS_AUTOSCALE_DOMAIN:-kafka0}
       R5AS_BOOTSTRAP_SERVERS: ${KAFKA_IP}:9092
+      R5AS_STATE_DIRECTORY: /root/kafka-streams
+      R5AS_REPLICATION_FACTOR: ${R5AS_REPLICATION_FACTOR:-1}
+      R5AS_SECURITY_PROTOCOL_CONFIG: SASL_SSL
+      R5AS_SSL_KEYSTORE_TYPE_CONFIG: PEM
+      R5AS_SSL_TRUSTSTORE_TYPE_CONFIG: PEM
+      R5AS_SSL_CA_CERTIFICATE: ${KAFKA_SSL_TRUSTSTORE_CERTIFICATES}
+      R5AS_SASL_USERNAME: ${KAFKA_CLIENT_USERNAME:-client}
+      R5AS_SASL_PASSWORD: ${KAFKA_CLIENT_PASSWORD}
+      R5AS_SASL_ENABLED_MECHANISMS: PLAIN
+      R5AS_AUTH_SECRET: ${R5AS_AUTH_SECRET}
+      R5AS_AUTH_JWT_TTL_MINUTES: ${R5AS_AUTH_JWT_TTL_MINUTES:-800}
+      R5AS_TRAEFIK_HOST: ${TRAEFIK_HOST:-localhost}
+      R5AS_AUTOSCALE_DOMAIN: ${TRAEFIK_HOST:-localhost}
     labels:
       traefik.enable: true
       traefik.http.routers.asproxy.rule: PathPrefix(`/as/v1/proxy`) && (Host(`${TRAEFIK_HOST:?Ensure TRAEFIK_HOST is set to the DNS name of your server.}`) || Host(`${TRAEFIK_IP:?Ensure TRAEFIK_IP is set to the Public IP of your server.}`))
@@ -190,14 +203,17 @@ services:
       # R5AS_APPLICATION_PORT: ${R5AS_APPLICATION_PORT}
       R5AS_BOOTSTRAP_SERVERS: ${KAFKA_IP}:9092
       R5AS_BOOTSTRAP_SERVERS_FOR_NODES: ${KAFKA_IP}:9092
-      R5AS_AUTOCALE_EVALUATION_INTERVAL: 4000
+      R5AS_AUTOCALE_EVALUATION_INTERVAL: ${R5AS_AUTOCALE_EVALUATION_INTERVAL:-4000}
       R5AS_SECURITY_PROTOCOL_CONFIG: SASL_SSL
       R5AS_SSL_KEYSTORE_TYPE_CONFIG: PEM
       R5AS_SSL_TRUSTSTORE_TYPE_CONFIG: PEM
       R5AS_SSL_CA_CERTIFICATE: ${KAFKA_SSL_TRUSTSTORE_CERTIFICATES}
       R5AS_SASL_USERNAME: ${KAFKA_CLIENT_USERNAME:-client}
       R5AS_SASL_PASSWORD: ${KAFKA_CLIENT_PASSWORD}
-      R5AS_SASL_ENABLED_MECHANISMS: PLAIN 
+      R5AS_SASL_ENABLED_MECHANISMS: PLAIN
+      R5AS_TRAEFIK_HOST: ${TRAEFIK_HOST:-localhost}
+      R5AS_AUTH_SECRET: ${R5AS_AUTH_SECRET}
+      R5AS_AUTH_JWT_TTL_MINUTES: ${R5AS_AUTH_JWT_TTL_MINUTES:-800}
     labels:
       traefik.enable: true
       traefik.http.routers.autoscale-springdoc.rule: PathPrefix(`/as/v1/autoscale/v3`) && (Host(`${TRAEFIK_HOST:?Ensure TRAEFIK_HOST is set to the DNS name of your server.}`) || Host(`${TRAEFIK_IP:?Ensure TRAEFIK_IP is set to the Public IP of your server.}`))
@@ -216,9 +232,13 @@ services:
       - 10080:8080
     environment:
       R5AS_AUTH_SECRET: ${R5AS_AUTH_SECRET:?R5AS_AUTH_SECRET is not set}
-      R5AS_AUTH_JWT_TTL_MINUTES: 400
+      R5AS_AUTH_JWT_TTL_MINUTES: ${R5AS_AUTH_JWT_TTL_MINUTES:-800}
       R5AS_AUTH_USER: ${R5AS_AUTH_USER:?R5AS_AUTH_USER is not set}
       R5AS_AUTH_PASS: ${R5AS_AUTH_PASS:?R5AS_AUTH_PASS is not set}
+      R5AS_PROXY_USER: ${R5AS_PROXY_USER:-proxy_user}
+      R5AS_PROXY_PASS: ${R5AS_PROXY_PASS:-proxy_pass}
+      R5AS_SPATIAL_USER: ${R5AS_SPATIAL_USER:-spatial_user}
+      R5AS_SPATIAL_PASS: ${R5AS_SPATIAL_PASS:-spatial_pass}
     labels:
       traefik.enable: true
       traefik.http.routers.asauth.rule: PathPrefix(`/as/v1/auth`) && (Host(`${TRAEFIK_HOST:?Ensure TRAEFIK_HOST is set to the DNS name of your server.}`) || Host(`${TRAEFIK_IP:?Ensure TRAEFIK_IP is set to the Public IP of your server.}`))

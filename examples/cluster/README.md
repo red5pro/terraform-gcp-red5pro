@@ -57,7 +57,7 @@ module "red5pro" {
   firewall_kafka_network_tags_use_existing          = false                              # true - use existing firewall network tags, false - create new firewall network tags
   firewall_kafka_network_tags_existing              = ["example-tag-1", "example-tag-2"] # Existing network tags name for firewall configuration
   firewall_nodes_network_tags_use_existing          = false                              # true - use existing firewall network tags, false - create new firewall network tags
-  firewall_nodes_network_tags_existing              = ["example-tag-1"]                  # Existing network tags name for firewall configuration
+  firewall_nodes_network_tags_existing              = ["example-tag-1", "example-tag-2"] # Existing network tags name for firewall configuration
 
   # Red5 Pro general configuration
   red5pro_license_key = "1111-2222-3333-4444" # Red5 Pro license key (https://account.red5.net/login)
@@ -73,6 +73,11 @@ module "red5pro" {
   # Stream Manager configuration
   stream_manager_auth_user     = "example_user"     # Stream Manager 2.0 authentication user name
   stream_manager_auth_password = "example_password" # Stream Manager 2.0 authentication password
+  stream_manager_proxy_user    = "example_proxy_user"       # Stream Manager 2.0 proxy user name
+  stream_manager_proxy_password   = "example_proxy_password"   # Stream Manager 2.0 proxy password
+  stream_manager_spatial_user     = "example_spatial_user"     # Stream Manager 2.0 spatial user name
+  stream_manager_spatial_password = "example_spatial_password" # Stream Manager 2.0 spatial password
+  stream_manager_version          = "latest"                   # Stream Manager 2.0 docker images version (latest, 14.1.0, 14.1.1, etc.) - https://hub.docker.com/r/red5pro/as-admin/tags
   stream_manager_instance_type = "n2-standard-2"    # Instance type for Red5 Pro stream manager server
   stream_manager_disk_type     = "pd-ssd"           # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
   stream_manager_disk_size     = 24                 # Stream Manager server boot size in GB
@@ -137,22 +142,22 @@ module "red5pro" {
   node_group_origins_min               = 1               # Number of minimum Origins
   node_group_origins_max               = 10              # Number of maximum Origins
   node_group_origins_instance_type     = "n2-standard-2" # Origins google instance type
-  node_group_origins_disk_size         = 16              # Volume size for Origins
+  node_group_origins_disk_size         = 16              # Disk size for Origins
+  node_group_origins_connection_limit  = 20              # Maximum number of publishers to the origin server
   node_group_edges_min                 = 1               # Number of minimum Edges
   node_group_edges_max                 = 20              # Number of maximum Edges
   node_group_edges_instance_type       = "n2-standard-2" # Edges google instance type
-  node_group_edges_disk_size           = 16              # Volume size for Edges
+  node_group_edges_disk_size           = 16              # Disk size for Edges
+  node_group_edges_connection_limit    = 200             # Maximum number of subscribers to the edge server
   node_group_transcoders_min           = 0               # Number of minimum Transcoders
   node_group_transcoders_max           = 10              # Number of maximum Transcoders
   node_group_transcoders_instance_type = "n2-standard-2" # Transcoders google instance type
-  node_group_transcoders_disk_size     = 16              # Volume size for Transcoders
+  node_group_transcoders_disk_size     = 16              # Disk size for Transcoders
+  node_group_transcoders_connection_limit = 20           # Maximum number of publishers to the transcoder server
   node_group_relays_min                = 0               # Number of minimum Relays
   node_group_relays_max                = 20              # Number of maximum Relays
   node_group_relays_instance_type      = "n2-standard-2" # Relays google instance type
-  node_group_relays_disk_size          = 16              # Volume size for Relays
+  node_group_relays_disk_size          = 16              # Disk size for Relays
 }
 
-output "module_output" {
-  value = module.red5pro
-}
 ```

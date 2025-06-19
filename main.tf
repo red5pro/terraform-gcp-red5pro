@@ -29,6 +29,7 @@ locals {
   kafka_standalone_firewall_tags  = local.kafka_standalone_firewall ? ["${var.name}-kafka-tag"] : var.firewall_kafka_network_tags_existing
   kafka_standalone_instance       = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
   ubuntu_image                    = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
+  r5as_traefik_host               = local.autoscale ? local.stream_manager_ip : var.https_ssl_certificate_domain_name
 }
 
 ################################################################################
@@ -356,7 +357,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     TF_VAR_gcp_project_id=${var.google_project_id}
     TF_VAR_r5p_license_key=${var.red5pro_license_key}
     TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
-    TRAEFIK_HOST=${var.https_ssl_certificate_domain_name}
+    TRAEFIK_HOST=${local.r5as_traefik_host}
     TRAEFIK_SSL_EMAIL=${var.https_ssl_certificate_email}
     TRAEFIK_CMD=${local.stream_manager_ssl == "imported" ? "--providers.file.filename=/scripts/traefik.yaml" : ""}
   EOF

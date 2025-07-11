@@ -59,22 +59,54 @@ install_pkg() {
 }
 
 install_jdk() {
-    wget -O - https://apt.corretto.aws/corretto.key | sudo gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg &&
-        echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corretto.aws stable main" | sudo tee /etc/apt/sources.list.d/corretto.list
-    apt-get update
-    apt-get install -y java-17-amazon-corretto-jdk
+    log_i "Adding Amazon Corretto GPG key..."
+    curl -fsSL https://apt.corretto.aws/corretto.key | gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg || {
+        log_e "Failed to download or save Corretto GPG key."
+        return 1
+    }
+
+    log_i "Adding Corretto APT repository..."
+    echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corretto.aws stable main" | \
+        tee /etc/apt/sources.list.d/corretto.list > /dev/null
+
+    log_i "Updating APT cache..."
+    apt-get update || {
+        log_e "APT update failed."
+        return 1
+    }
+
+    log_i "Installing Amazon Corretto JDK 17..."
+    apt-get install -y java-17-amazon-corretto-jdk || {
+        log_e "JDK installation failed."
+        return 1
+    }
+
+    log_i "Amazon Corretto JDK 17 installed successfully."
 }
 
 download_kafka_archive() {
-    log_i "Download Kafka archive..."
-    wget -q "$KAFKA_ARCHIVE_URL"
-    # wget "$KAFKA_ARCHIVE_URL"
-    if ls kafka_*.tgz 1>/dev/null 2>&1; then
-        log_i "File matching kafka_*.tgz exists."
-        kafka_archive=$(ls kafka_*.tgz | xargs -n 1 basename)
-        log_i "Kafka archive: $kafka_archive"
+    log_i "Downloading Kafka archive from: $KAFKA_ARCHIVE_URL"
+    
+    local MAX_RETRIES=5
+    local COUNT=0
+
+    until wget -q "$KAFKA_ARCHIVE_URL"; do
+        COUNT=$((COUNT + 1))
+        echo "Download failed. Attempt $COUNT of $MAX_RETRIES"
+        if [ "$COUNT" -ge "$MAX_RETRIES" ]; then
+            log_e "Download failed after $MAX_RETRIES attempts. URL: $KAFKA_ARCHIVE_URL"
+            exit 1
+        fi
+        sleep 2
+    done
+
+    kafka_archive=$(find . -maxdepth 1 -name 'kafka_*.tgz' -print -quit)
+
+    if [[ -n "$kafka_archive" ]]; then
+        kafka_archive=$(basename "$kafka_archive")
+        log_i "Kafka archive downloaded: $kafka_archive"
     else
-        log_e "No file matching kafka_*.tgz found. Exiting."
+        log_e "No Kafka archive (kafka_*.tgz) found after download."
         ls -lo
         exit 1
     fi

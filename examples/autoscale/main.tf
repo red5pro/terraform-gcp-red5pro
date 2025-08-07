@@ -39,7 +39,7 @@ module "red5pro" {
   red5pro_api_key     = "examplekey"          # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
 
   # Kafka Service configuration
-  kafka_standalone_instance_type = "n2-standard-2" # Kafka service Instance type
+  kafka_standalone_instance_type = "n2-standard-4" # Kafka service Instance type
   kafka_standalone_disk_type     = "pd-ssd"        # Boot disk type for Kafka server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
   kafka_standalone_disk_size     = 24              # Kafka server boot size in GB
 

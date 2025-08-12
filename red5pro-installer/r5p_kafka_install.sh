@@ -84,6 +84,40 @@ install_jdk() {
     log_i "Amazon Corretto JDK 17 installed successfully."
 }
 
+install_google_cloud_ops_agent(){
+    log_i "Installing Google Cloud Ops Agent..."
+    
+    # Check if running on Google Cloud Platform
+    if curl -s -f -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone > /dev/null 2>&1; then
+        log_i "Detected Google Cloud Platform environment"
+        
+        # Add Google Cloud repository
+        curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+        if [ $? -eq 0 ]; then
+            bash add-google-cloud-ops-agent-repo.sh --also-install
+            if [ $? -eq 0 ]; then
+                log_i "Google Cloud Ops Agent installed successfully"
+                
+                # Start and enable the service
+                systemctl start google-cloud-ops-agent
+                systemctl enable google-cloud-ops-agent
+                
+                # Clean up the installation script
+                rm -f add-google-cloud-ops-agent-repo.sh
+            else
+                log_e "Failed to install Google Cloud Ops Agent"
+                rm -f add-google-cloud-ops-agent-repo.sh
+                return 1
+            fi
+        else
+            log_e "Failed to download Google Cloud Ops Agent installation script"
+            return 1
+        fi
+    else
+        log_w "Not running on Google Cloud Platform, skipping Google Cloud Ops Agent installation"
+    fi
+}
+
 download_kafka_archive() {
     log_i "Downloading Kafka archive from: $KAFKA_ARCHIVE_URL"
     
@@ -247,6 +281,7 @@ start_kafka() {
 
 install_pkg
 install_jdk
+install_google_cloud_ops_agent
 download_kafka_archive
 install_kafka
 start_kafka

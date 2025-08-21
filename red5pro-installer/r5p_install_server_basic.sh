@@ -170,8 +170,6 @@ install_google_cloud_ops_agent(){
 install_red5pro(){
     log_i "Install RED5PRO"
         
-    # RED5ARCHIVE=$(ls $CURRENT_DIRECTORY/red5pro-server-*.zip | xargs -n 1 basename);
-
     # Check if any red5pro zip files exist
     if ! ls $CURRENT_DIRECTORY/red5pro-server-*.zip >/dev/null 2>&1; then
         log_e "No red5pro-server-*.zip files found in current directory: $CURRENT_DIRECTORY"

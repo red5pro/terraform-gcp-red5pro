@@ -3,6 +3,10 @@
 # Before start this script you need copy red5pro-server-build.zip into the same folder with this script!!!
 ############################################################################################################
 
+# Set environment variables for non-interactive installation
+export DEBIAN_FRONTEND=noninteractive
+export APT_LISTCHANGES_FRONTEND=none
+
 RED5_HOME="/usr/local/red5pro"
 CURRENT_DIRECTORY=$(pwd)
 TEMP_FOLDER="$CURRENT_DIRECTORY/tmp"
@@ -166,8 +170,28 @@ install_google_cloud_ops_agent(){
 install_red5pro(){
     log_i "Install RED5PRO"
         
-    RED5ARCHIVE=$(ls $CURRENT_DIRECTORY/red5pro-server-*.zip | xargs -n 1 basename);
+    # RED5ARCHIVE=$(ls $CURRENT_DIRECTORY/red5pro-server-*.zip | xargs -n 1 basename);
+
+    # Check if any red5pro zip files exist
+    if ! ls $CURRENT_DIRECTORY/red5pro-server-*.zip >/dev/null 2>&1; then
+        log_e "No red5pro-server-*.zip files found in current directory: $CURRENT_DIRECTORY"
+        log_i "Files in current directory:"
+        ls -la $CURRENT_DIRECTORY/
+        exit 1
+    fi
     
+    # Get the zip file name
+    RED5ARCHIVE=$(ls $CURRENT_DIRECTORY/red5pro-server-*.zip | head -1)
+    RED5ARCHIVE_BASENAME=$(basename "$RED5ARCHIVE")
+    
+    log_i "Found Red5Pro archive: $RED5ARCHIVE_BASENAME"
+    
+    # Check if the file is readable
+    if [ ! -r "$RED5ARCHIVE" ]; then
+        log_e "Cannot read file: $RED5ARCHIVE"
+        exit 1
+    fi
+
     if ! unzip -q $RED5ARCHIVE -d $TEMP_FOLDER/; then
         log_e "Failed to extract zip. Possible invalid archive"
         rm -r $TEMP_FOLDER/*

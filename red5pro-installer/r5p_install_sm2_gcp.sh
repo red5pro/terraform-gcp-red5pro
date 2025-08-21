@@ -7,6 +7,10 @@
 # Date: 2024-11-07
 ############################################################################################################
 
+# Set environment variables for non-interactive installation
+export DEBIAN_FRONTEND=noninteractive
+export APT_LISTCHANGES_FRONTEND=none
+
 # Variables
 # SM_STANDALONE=""
 # SM_SSL=""

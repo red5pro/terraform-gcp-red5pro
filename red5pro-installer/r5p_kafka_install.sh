@@ -5,6 +5,10 @@
 # KAFKA_ARCHIVE_URL="https://downloads.apache.org/kafka/3.8.0/kafka_2.13-3.8.0.tgz"
 # KAFKA_CLUSTER_ID="kafka-id"
 
+# Set environment variables for non-interactive installation
+export DEBIAN_FRONTEND=noninteractive
+export APT_LISTCHANGES_FRONTEND=none
+
 CURRENT_DIRECTORY=$(pwd)
 packages=(ripgrep kafkacat)
 kafka_log_dir="/var/log/kafka"

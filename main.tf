@@ -353,7 +353,9 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     R5AS_PROXY_PASS=${var.stream_manager_proxy_password}
     R5AS_SPATIAL_USER=${var.stream_manager_spatial_user}
     R5AS_SPATIAL_PASS=${var.stream_manager_spatial_password}
+    CONTAINER_REGISTRY=${var.stream_manager_container_registry}
     AS_VERSION=${var.stream_manager_version}
+    AS_TESTBED_VERSION=${var.stream_manager_testbed_version}
     TF_VAR_gcp_project_id=${var.google_project_id}
     TF_VAR_r5p_license_key=${var.red5pro_license_key}
     TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
@@ -391,6 +393,9 @@ resource "null_resource" "red5pro_sm_configuration" {
       "export SM_SSL='${local.stream_manager_ssl}'",
       "export SM_STANDALONE='${local.stream_manager_standalone}'",
       "export SM_SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",
+      "export CONTAINER_REGISTRY='${var.stream_manager_container_registry}'",
+      "export CONTAINER_REGISTRY_USER='${var.stream_manager_container_registry_user}'",
+      "export CONTAINER_REGISTRY_PASSWORD='${var.stream_manager_container_registry_password}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_sm2_gcp.sh",

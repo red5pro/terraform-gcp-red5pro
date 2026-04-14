@@ -106,7 +106,7 @@ provider "google" {
 }
 
 module "red5pro" {
-  source            = "../../"
+  source            = "red5pro/red5pro/gcp"
   google_region     = "us-west2"                                                          # Google region where resources will create eg: us-west2
   google_project_id = "example-gcp-project-name"                                          # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
@@ -205,7 +205,7 @@ provider "google" {
 }
 
 module "red5pro" {
-  source            = "../../"
+  source            = "red5pro/red5pro/gcp"
   google_region     = "us-west2"                                                          # Google region where resources will create eg: us-west2
   google_project_id = "example-gcp-project-name"                                          # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 
@@ -370,7 +370,7 @@ provider "google" {
 }
 
 module "red5pro" {
-  source            = "../../"
+  source            = "red5pro/red5pro/gcp"
   google_region     = "us-west2"                                                          # Google region where resources will create eg: us-west2
   google_project_id = "example-gcp-project-name"                                          # Google Cloud project ID (https://support.google.com/googleapi/answer/7014113?hl=en)
 

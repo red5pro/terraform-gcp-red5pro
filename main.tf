@@ -29,7 +29,7 @@ locals {
   kafka_standalone_firewall_tags  = local.kafka_standalone_firewall ? ["${var.name}-kafka-tag"] : var.firewall_kafka_network_tags_existing
   kafka_standalone_instance       = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
   ubuntu_image                    = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
-  r5as_traefik_host               = local.autoscale ? local.stream_manager_ip : var.https_ssl_certificate_domain_name
+  red5pro_node_image_name         = local.cluster_or_autoscale && var.node_image_create ? "${var.name}-node-image-${lower(formatdate("DDMMMYY-hhmm", timestamp()))}" : ""
 }
 
 ################################################################################
@@ -359,7 +359,7 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     TF_VAR_gcp_project_id=${var.google_project_id}
     TF_VAR_r5p_license_key=${var.red5pro_license_key}
     TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
-    TRAEFIK_HOST=${local.r5as_traefik_host}
+    TRAEFIK_HOST=${var.stream_manager_public_hostname}
     TRAEFIK_SSL_EMAIL=${var.https_ssl_certificate_email}
     TRAEFIK_CMD=${local.stream_manager_ssl == "imported" ? "--providers.file.filename=/scripts/traefik.yaml" : ""}
   EOF
@@ -390,6 +390,10 @@ resource "null_resource" "red5pro_sm_configuration" {
       "echo 'KAFKA_IP=${local.kafka_ip}' | sudo tee -a /usr/local/stream-manager/.env",
       "echo 'TRAEFIK_IP=${local.stream_manager_ip}' | sudo tee -a /usr/local/stream-manager/.env",
       "echo 'TF_VAR_gcp_node_network_tag=${jsonencode(local.red5_node_firewall_tags)}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'AS_ADMIN_UI_VERSION=${var.stream_manager_admin_ui_version}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'AS_ADMIN_UI_MAIN_REGION=${var.google_region}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'AS_ADMIN_UI_NODE_IMAGE_NAME=${local.red5pro_node_image_name}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'AS_ADMIN_UI_GCP_VPC=${local.vpc_network_name}' | sudo tee -a /usr/local/stream-manager/.env",
       "export SM_SSL='${local.stream_manager_ssl}'",
       "export SM_STANDALONE='${local.stream_manager_standalone}'",
       "export SM_SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",
@@ -408,6 +412,12 @@ resource "null_resource" "red5pro_sm_configuration" {
     }
   }
   depends_on = [tls_cert_request.kafka_server_csr, null_resource.red5pro_kafka_standalone_configuration]
+  lifecycle {
+    precondition {
+      condition     = var.stream_manager_public_hostname != ""
+      error_message = "ERROR! Value in variable stream_manager_public_hostname must be a valid FQDN! Example: sm.example.com"
+    }
+  }
 }
 
 ################################################################################
@@ -1016,7 +1026,7 @@ resource "google_compute_image" "red5_sm_image" {
 # Red5 Node - Image
 resource "google_compute_image" "red5_node_image" {
   count       = var.node_image_create ? 1 : 0
-  name        = "${var.name}-node-image-${formatdate("DDMMYY-hhmm", timestamp())}"
+  name        = local.red5pro_node_image_name
   project     = local.google_cloud_project
   source_disk = google_compute_instance.red5_node_server[0].boot_disk.0.source
   depends_on  = [null_resource.delete_red5_node_instance[0]]

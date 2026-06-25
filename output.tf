@@ -46,3 +46,8 @@ output "manual_dns_record" {
   description = "DNS hint for TLS: cluster/autoscale uses stream_manager_public_hostname; standalone uses https_ssl_certificate_domain_name"
   value       = var.https_ssl_certificate != "none" ? ( local.cluster_or_autoscale ? "Please create DNS A record for Stream Manager 2.0: '${var.stream_manager_public_hostname}' -> '${local.stream_manager_ip}'" : "Please create DNS A record for Standalone Red5 Pro: '${var.https_ssl_certificate_domain_name}' -> '${local.standalone_server_ip}'" ) : ""
 }
+
+output "r5as_conference_secret" {
+  description = "Auto-generated R5AS Conference secret (hex)"
+  value       = try(random_id.r5as_conference_secret[0].hex, "")
+}

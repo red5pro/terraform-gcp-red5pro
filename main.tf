@@ -29,7 +29,7 @@ locals {
   kafka_standalone_firewall_tags  = local.kafka_standalone_firewall ? ["${var.name}-kafka-tag"] : var.firewall_kafka_network_tags_existing
   kafka_standalone_instance       = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
   ubuntu_image                    = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
-  red5pro_node_image_name         = local.cluster_or_autoscale && var.node_image_create ? "${var.name}-node-image-${lower(formatdate("DDMMMYY-hhmm", timestamp()))}" : ""
+  red5pro_node_image_name         = local.cluster_or_autoscale && var.node_image_create ? "${var.name}-node-image-${random_id.node_image_suffix[0].hex}" : ""
 }
 
 ################################################################################
@@ -353,6 +353,8 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     R5AS_PROXY_PASS=${var.stream_manager_proxy_password}
     R5AS_SPATIAL_USER=${var.stream_manager_spatial_user}
     R5AS_SPATIAL_PASS=${var.stream_manager_spatial_password}
+    R5AS_CONFERENCE_SECRET=${random_id.r5as_conference_secret[0].hex}
+    R5AS_NODE_API_ACCESS_TOKEN=${var.red5pro_api_key}
     CONTAINER_REGISTRY=${var.stream_manager_container_registry}
     AS_VERSION=${var.stream_manager_version}
     AS_TESTBED_VERSION=${var.stream_manager_testbed_version}
@@ -1010,6 +1012,16 @@ resource "null_resource" "delete_red5_node_disk" {
 ####################################################################################################
 # Red5 Pro Autoscaling Nodes create images - Origin & Stream Manager
 ####################################################################################################
+resource "random_id" "r5as_conference_secret" {
+  count       = local.cluster_or_autoscale ? 1 : 0
+  byte_length = 16
+}
+
+resource "random_id" "node_image_suffix" {
+  count       = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
+  byte_length = 4
+}
+
 # Stream Manager Image
 resource "google_compute_image" "red5_sm_image" {
   count       = local.autoscale ? 1 : 0

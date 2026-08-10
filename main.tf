@@ -397,7 +397,6 @@ resource "null_resource" "red5pro_sm_configuration" {
       ,
       "export SM_SSL='${local.stream_manager_ssl}'",
       "export SM_STANDALONE='${local.stream_manager_standalone}'",
-      "export SM_SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",
       "export KAFKA_REPLICAS='${local.kafka_on_sm_replicas}'",
       "export CONTAINER_REGISTRY='${var.stream_manager_container_registry}'",
       "export CONTAINER_REGISTRY_USER='${var.stream_manager_container_registry_user}'",
@@ -830,6 +829,13 @@ resource "google_compute_global_forwarding_rule" "lb_http_forward_rule" {
   port_range            = "80"
   target                = google_compute_target_http_proxy.lb_http_proxy[0].id
   ip_address            = local.lb_ip_address
+
+  lifecycle {
+    precondition {
+      condition     = var.https_ssl_certificate != "letsencrypt"
+      error_message = "ERROR! https_ssl_certificate=letsencrypt is not supported for type=autoscale - the GCP load balancer only gets an SSL certificate when https_ssl_certificate is imported or existing. The ACME challenge cannot reach Stream Manager through the load balancer."
+    }
+  }
 }
 
 # Load Balancer HTTPS proxy

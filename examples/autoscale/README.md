@@ -4,7 +4,7 @@
 
 This example Terraform module automates the infrastructure provisioning of Autoscale Stream Managers 2.0 with Red5 Pro (SM2.0) Autoscaling node groups (origins, edges, transcoders, relays) in GCP.
 
-**`stream_manager_public_hostname`:** Set this to the DNS name clients use for Stream Manager (e.g. `sm.example.com`). It sets Traefik’s host, the admin UI API base, and outputs such as `stream_manager_url_https`. Use a concrete FQDN, not a wildcard. Point DNS at the load balancer hostname from outputs. For TLS, `https_ssl_certificate_domain_name` may be a wildcard (e.g. `*.example.com`) or an ACM primary name if that certificate covers this hostname.
+**`stream_manager_public_hostname`:** Set this to the DNS name clients use for Stream Manager (e.g. `sm.example.com`). It sets Traefik’s host, the admin UI API base, and outputs such as `stream_manager_url_https`. Use a concrete FQDN, not a wildcard. Point DNS at the load balancer hostname from outputs. TLS is terminated on the load balancer, so only `imported` and `existing` are supported here - `letsencrypt` is rejected by a precondition. `https_ssl_certificate_domain_name` is not used for autoscale deployments; `existing` selects the certificate through `https_ssl_certificate_name`.
 
 ## Terraform Deployed Resources (autoscale)
 

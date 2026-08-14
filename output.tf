@@ -9,7 +9,7 @@ output "google_cloud_project_id" {
   description = "Google Cloud Project ID where resources has been created"
   value       = local.google_cloud_project
 }
-output "google_cloud_vpc_netwrok_name" {  
+output "google_cloud_vpc_netwrok_name" {
   description = "VPC Network name used in Google Cloud"
   value       = local.vpc_network_name
 }
@@ -38,13 +38,13 @@ output "stream_manager_url_http" {
   value       = local.cluster_or_autoscale ? "http://${local.stream_manager_ip}:80" : ""
 }
 output "stream_manager_url_https" {
-  description = "Stream Manager HTTPS URL (hostname from stream_manager_public_hostname, not https_ssl_certificate_domain_name — supports wildcard certs)"
+  description = "Stream Manager HTTPS URL (hostname from stream_manager_public_hostname, which is also the certificate subject for cluster/autoscale)"
   value       = local.cluster_or_autoscale && var.https_ssl_certificate != "none" && var.stream_manager_public_hostname != "" ? "https://${var.stream_manager_public_hostname}:443" : ""
 
 }
 output "manual_dns_record" {
   description = "DNS hint for TLS: cluster/autoscale uses stream_manager_public_hostname; standalone uses https_ssl_certificate_domain_name"
-  value       = var.https_ssl_certificate != "none" ? ( local.cluster_or_autoscale ? "Please create DNS A record for Stream Manager 2.0: '${var.stream_manager_public_hostname}' -> '${local.stream_manager_ip}'" : "Please create DNS A record for Standalone Red5 Pro: '${var.https_ssl_certificate_domain_name}' -> '${local.standalone_server_ip}'" ) : ""
+  value       = var.https_ssl_certificate != "none" ? (local.cluster_or_autoscale ? "Please create DNS A record for Stream Manager 2.0: '${var.stream_manager_public_hostname}' -> '${local.stream_manager_ip}'" : "Please create DNS A record for Standalone Red5 Pro: '${var.https_ssl_certificate_domain_name}' -> '${local.standalone_server_ip}'") : ""
 }
 
 output "r5as_conference_secret" {

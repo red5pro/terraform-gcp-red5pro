@@ -6,7 +6,7 @@ output "google_cloud_project_id" {
   description = "Google Cloud Project ID where resources has been created"
   value       = module.red5pro.google_cloud_project_id
 }
-output "vpc_netwrok_name" {  
+output "vpc_netwrok_name" {
   description = "VPC Network name used in Google Cloud"
   value       = module.red5pro.google_cloud_vpc_netwrok_name
 }

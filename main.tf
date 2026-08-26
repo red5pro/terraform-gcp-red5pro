@@ -288,6 +288,13 @@ resource "random_password" "r5as_auth_secret" {
   special = false
 }
 
+# Generate the AS-Admin secrets store encryption key. as-admin/as-streams/as-proxy/as-terraform
+# all need the same key to decrypt secrets from the shared Kafka-backed secret store.
+resource "random_id" "r5as_secrets_key" {
+  count       = local.cluster_or_autoscale ? 1 : 0
+  byte_length = 32
+}
+
 # Red5 Pro Stream Manager Instance
 resource "google_compute_instance" "red5_stream_manager_server" {
   count                     = local.cluster_or_autoscale ? 1 : 0
@@ -330,9 +337,12 @@ resource "google_compute_instance" "red5_stream_manager_server" {
 
   metadata_startup_script = <<-EOF
     #!/bin/bash
+    mkdir -p /usr/local/stream-manager/keys
     mkdir -p /usr/local/stream-manager/certs
     echo "${try(file(var.https_ssl_certificate_cert_path), "")}" > /usr/local/stream-manager/certs/cert.pem
     echo "${try(file(var.https_ssl_certificate_key_path), "")}" > /usr/local/stream-manager/certs/privkey.pem
+    echo "${random_id.r5as_secrets_key[0].b64_std}" > /usr/local/stream-manager/keys/r5as-secrets.key
+    chmod 400 /usr/local/stream-manager/keys/r5as-secrets.key
     ############################ .env file #########################################################
     cat >> /usr/local/stream-manager/.env <<- EOM
     KAFKA_CLUSTER_ID=${random_id.kafka_cluster_id[0].b64_std}

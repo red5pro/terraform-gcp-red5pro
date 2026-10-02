@@ -274,6 +274,16 @@ variable "red5_stream_manager_firewall_tcp_ports" {
   type        = list(string)
   default     = ["9092", "443", "80"]
 }
+variable "stream_proxy_firewall_tcp_ports" {
+  description = "Stream Proxy TCP ports open for the Red5 Stream manager server in Google cloud firewall, used only when stream_proxy_enable = true. RTMP/RTMPS 1935-1944, RTSP/RTSPS 8554-8563"
+  type        = list(string)
+  default     = ["1935-1944", "8554-8563"]
+}
+variable "stream_proxy_firewall_udp_ports" {
+  description = "Stream Proxy UDP ports open for the Red5 Stream manager server in Google cloud firewall, used only when stream_proxy_enable = true. RTSP 8554-8558, SRT 10100-10149"
+  type        = list(string)
+  default     = ["8554-8558", "10100-10149"]
+}
 variable "stream_manager_instance_type" {
   description = "Instance type for the Stream Manager server"
   type        = string
@@ -292,6 +302,18 @@ variable "stream_manager_disk_size" {
     condition     = var.stream_manager_disk_size >= 16
     error_message = "The stream_manager_disk_size value must be a valid! Minimum 16"
   }
+}
+
+# Red5 Pro Stream Proxy configuration
+variable "stream_proxy_enable" {
+  description = "Deploy Red5 Pro Stream Proxy alongside the Stream Manager 2.0 services. Supported for deployment type cluster only. It publishes RTMP/RTMPS 1935-1944, RTSP/RTSPS 8554-8563 and SRT 10100-10149 on the Stream Manager instance, and a matching firewall rule is created for the Stream Manager network tag (not created when firewall_stream_manager_network_tags_use_existing = true)."
+  type        = bool
+  default     = false
+}
+variable "stream_proxy_version" {
+  description = "Red5 Pro Stream Proxy docker image version, used only when stream_proxy_enable = true. Example: main.b41"
+  type        = string
+  default     = ""
 }
 variable "stream_manager_reserved_ip_use_existing" {
   description = "Use existing reserved IP for Stream Manager or create a new one"
@@ -503,6 +525,65 @@ variable "kafka_standalone_instance_arhive_url" {
   default     = "https://archive.apache.org/dist/kafka/3.9.2/kafka_2.13-3.9.2.tgz"
 }
 
+# RabbitMQ configuration
+variable "rabbitmq_create" {
+  description = "Create RabbitMQ instances (cluster/autoscale only) true/false"
+  type        = bool
+  default     = false
+}
+variable "rabbitmq_mode" {
+  description = "RabbitMQ deployment mode: single - one instance, cluster - 3 instances in a RabbitMQ cluster"
+  type        = string
+  default     = "single"
+  validation {
+    condition     = contains(["single", "cluster"], var.rabbitmq_mode)
+    error_message = "The rabbitmq_mode value must be single or cluster"
+  }
+}
+variable "rabbitmq_image" {
+  description = "RabbitMQ Docker image"
+  type        = string
+  default     = "rabbitmq:4.3.6-management"
+}
+variable "rabbitmq_instance_type" {
+  description = "RabbitMQ instance type"
+  type        = string
+  default     = "e2-medium"
+}
+variable "rabbitmq_disk_type" {
+  description = "Boot disk type for RabbitMQ instances. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`"
+  type        = string
+  default     = "pd-ssd"
+}
+variable "rabbitmq_disk_size" {
+  description = "value to set the Disk size for RabbitMQ"
+  type        = number
+  default     = 16
+  validation {
+    condition     = var.rabbitmq_disk_size >= 10
+    error_message = "The rabbitmq_disk_size value must be a valid! Minimum 10"
+  }
+}
+variable "rabbitmq_user" {
+  description = "RabbitMQ user name"
+  type        = string
+  default     = "red5pro"
+  validation {
+    condition     = can(regex("^[A-Za-z0-9_-]+$", var.rabbitmq_user))
+    error_message = "The rabbitmq_user value must contain only letters, digits, '_' and '-'"
+  }
+}
+variable "rabbitmq_password" {
+  description = "RabbitMQ user password, empty value - generate a random password"
+  type        = string
+  default     = ""
+  sensitive   = true
+  validation {
+    condition     = can(regex("^[A-Za-z0-9_-]*$", var.rabbitmq_password))
+    error_message = "The rabbitmq_password value must contain only letters, digits, '_' and '-'"
+  }
+}
+
 # Firewalls network tags configuration
 variable "firewall_standalone_network_tags_use_existing" {
   description = "Use existing firewall network Tags for standalone Red5 Pro server"
@@ -610,6 +691,17 @@ variable "stream_manager_spatial_password" {
   description = "value to set the user password for Stream Manager 2.0 spatial"
   type        = string
   default     = ""
+}
+variable "stream_manager_intent_user" {
+  description = "value to set the user name for Stream Manager 2.0 intent API (ROLE_INTENT)"
+  type        = string
+  default     = "intent_admin"
+}
+variable "stream_manager_intent_password" {
+  description = "value to set the user password for Stream Manager 2.0 intent API (ROLE_INTENT). Generated when empty"
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 variable "stream_manager_version" {
   description = "value to set the version for Stream Manager 2.0"

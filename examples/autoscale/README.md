@@ -14,9 +14,11 @@ This example Terraform module automates the infrastructure provisioning of Autos
 - Firewall Rules
   - Stream Manager 2.0
   - Kafka
+  - RabbitMQ (optional)
   - Red5 Pro (SM2.0) Autoscaling Nodes
 - SSH key pair (use existing or create a new one)
 - Standalone Kafka instance
+- RabbitMQ in Docker (optional): one instance (`rabbitmq_mode = "single"`) or a 3 node RabbitMQ cluster (`rabbitmq_mode = "cluster"`). AMQP port `5672` is open only for the internal ranges of the VPC, nodes connect to the private IPs.
 - Stream Manager 2.0 instance image
 - Instance pool for Stream Manager 2.0 instances
 - Autoscaling configuration for Stream Manager 2.0 instances
@@ -73,6 +75,16 @@ module "red5pro" {
   kafka_standalone_disk_type     = "pd-ssd"                                              # Boot disk type for Kafka server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
   kafka_standalone_disk_size     = 24                                                    # Kafka server boot size in GB
 
+  # RabbitMQ configuration - (Optional)
+  rabbitmq_create        = false                       # true - create RabbitMQ instances, false - do not create RabbitMQ
+  rabbitmq_mode          = "single"                    # single - one instance, cluster - 3 instances in a RabbitMQ cluster
+  rabbitmq_image         = "rabbitmq:4.3.6-management" # RabbitMQ Docker image
+  rabbitmq_instance_type = "e2-medium"                 # RabbitMQ Instance type
+  rabbitmq_disk_type     = "pd-ssd"                    # Boot disk type for RabbitMQ instances. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`
+  rabbitmq_disk_size     = 16                          # RabbitMQ boot disk size in GB
+  rabbitmq_user          = "red5pro"                   # RabbitMQ user name
+  rabbitmq_password      = ""                          # RabbitMQ user password, empty value - generate a random password
+
   # Stream Manager configuration
   stream_manager_auth_user                = "example_user"                               # Stream Manager 2.0 authentication user name
   stream_manager_auth_password            = "example_password"                           # Stream Manager 2.0 authentication password
@@ -80,6 +92,8 @@ module "red5pro" {
   stream_manager_proxy_password           = "example_proxy_password"                     # Stream Manager 2.0 proxy password
   stream_manager_spatial_user             = "example_spatial_user"                       # Stream Manager 2.0 spatial user name
   stream_manager_spatial_password         = "example_spatial_password"                   # Stream Manager 2.0 spatial password
+  stream_manager_intent_user              = "intent_admin"                               # Stream Manager 2.0 intent API user name
+  stream_manager_intent_password          = ""                                           # Stream Manager 2.0 intent API password (generated when empty)
   stream_manager_version                  = "latest"                                     # Stream Manager 2.0 docker images version (latest, 14.1.0, 14.1.1, etc.) - https://hub.docker.com/r/red5pro/as-admin/tags
   stream_manager_instance_type            = "n2-standard-2"                              # Instance type for Red5 Pro stream manager server
   stream_manager_disk_type                = "pd-ssd"                                     # Boot disk type for Stream Manager server. Possible values are `pd-ssd`, `pd-standard`, `pd-balanced`

@@ -30,6 +30,24 @@ locals {
   kafka_standalone_instance       = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
   ubuntu_image                    = lookup(var.ubuntu_images_gcp, var.ubuntu_version, "what?")
   red5pro_node_image_name         = local.cluster_or_autoscale && var.node_image_create ? "${var.name}-node-image-${random_id.node_image_suffix[0].hex}" : ""
+  rabbitmq_create                 = local.cluster_or_autoscale && var.rabbitmq_create
+  rabbitmq_node_count             = local.rabbitmq_create ? var.rabbitmq_mode == "cluster" ? 3 : 1 : 0
+  rabbitmq_password               = local.rabbitmq_create ? var.rabbitmq_password != "" ? var.rabbitmq_password : random_password.rabbitmq_password[0].result : ""
+  rabbitmq_firewall_tags          = ["${var.name}-rabbitmq-tag"]
+  # AMQP is open for the internal ranges of the VPC: all subnets of an existing VPC, or the
+  # 10.128.0.0/9 range of the subnets created automatically in a new auto mode VPC
+  rabbitmq_amqp_source_ranges    = var.vpc_use_existing ? [for subnet in data.google_compute_subnetwork.existing_vpc_subnetworks : subnet.ip_cidr_range] : ["10.128.0.0/9"]
+  stream_manager_intent_password = local.cluster_or_autoscale ? var.stream_manager_intent_password != "" ? var.stream_manager_intent_password : random_password.r5as_intent_password[0].result : ""
+  # The Stream Proxy selects a node group by the letter at the end of its name, A first,
+  # then B and so on, so with the proxy the name ends with A. Node group name is max 16 characters.
+  node_group_name = local.stream_proxy_enable ? "${trimsuffix(substr(var.name, 0, 14), "-")}-A" : substr(var.name, 0, 16)
+  # Stream Proxy runs in the Stream Manager compose stack, deployment type cluster only
+  stream_proxy_enable = local.cluster && var.stream_proxy_enable
+  # The public IP is used instead of stream_manager_public_hostname on purpose: nginx
+  # inside the Stream Proxy resolves host names through public resolvers, which fails in
+  # a VPC without outbound DNS. Traefik accepts the Stream Manager public IP as a host,
+  # it is in the router rules together with TRAEFIK_HOST.
+  stream_proxy_sm_url = "${local.stream_manager_ssl == "none" ? "http" : "https"}://${local.stream_manager_ip}"
 }
 
 ################################################################################
@@ -82,6 +100,12 @@ data "google_compute_network" "existing_vpc_network" {
   count   = var.vpc_use_existing ? 1 : 0
   name    = var.vpc_name_existing
   project = local.google_cloud_project
+}
+
+# Get subnets of the existing VPC, used for the RabbitMQ firewall
+data "google_compute_subnetwork" "existing_vpc_subnetworks" {
+  for_each  = local.rabbitmq_create && var.vpc_use_existing ? toset(data.google_compute_network.existing_vpc_network[0].subnetworks_self_links) : toset([])
+  self_link = each.value
 }
 
 # Get available zones
@@ -222,6 +246,10 @@ resource "google_compute_instance" "red5_standalone_server" {
     ]
   }
   tags = local.standalone_server_firewall_tags
+
+  lifecycle {
+    ignore_changes = [boot_disk[0].initialize_params[0].image]
+  }
 }
 
 ################################################################################
@@ -238,6 +266,24 @@ resource "google_compute_firewall" "red5_stream_manager_firewall" {
   allow {
     protocol = "tcp"
     ports    = var.red5_stream_manager_firewall_tcp_ports
+  }
+  source_ranges = ["0.0.0.0/0"]
+  project       = local.google_cloud_project
+  target_tags   = local.stream_manager_firewall_tags
+}
+
+# Ports of the Red5 Pro Stream Proxy, added only when stream_proxy_enable = true
+resource "google_compute_firewall" "red5_stream_manager_stream_proxy_firewall" {
+  count   = local.stream_proxy_enable && local.stream_manager_firewall ? 1 : 0
+  name    = "${var.name}-stream-manager-stream-proxy-firewall"
+  network = local.vpc_network_name
+  allow {
+    protocol = "tcp"
+    ports    = var.stream_proxy_firewall_tcp_ports
+  }
+  allow {
+    protocol = "udp"
+    ports    = var.stream_proxy_firewall_udp_ports
   }
   source_ranges = ["0.0.0.0/0"]
   project       = local.google_cloud_project
@@ -293,6 +339,30 @@ resource "random_password" "r5as_auth_secret" {
 resource "random_id" "r5as_secrets_key" {
   count       = local.cluster_or_autoscale ? 1 : 0
   byte_length = 32
+}
+
+resource "random_password" "r5as_intent_password" {
+  count   = local.cluster_or_autoscale && var.stream_manager_intent_password == "" ? 1 : 0
+  length  = 24
+  special = false
+}
+
+# Stream Proxy configuration check, it is a separate resource so the errors are
+# reported before anything is created
+resource "terraform_data" "validate_stream_proxy" {
+  count = var.stream_proxy_enable ? 1 : 0
+  input = var.stream_proxy_version
+
+  lifecycle {
+    precondition {
+      condition     = local.cluster
+      error_message = "ERROR! stream_proxy_enable = true is supported only for type = cluster, current type is ${var.type}. The Stream Proxy runs on the Stream Manager instance and its RTMP, RTSP and SRT ports cannot be served by the HTTP(S) load balancer of the autoscale deployment."
+    }
+    precondition {
+      condition     = var.stream_proxy_version != ""
+      error_message = "ERROR! Value in variable stream_proxy_version is required when stream_proxy_enable = true! Example: main.b41"
+    }
+  }
 }
 
 # Red5 Pro Stream Manager Instance
@@ -357,6 +427,8 @@ resource "google_compute_instance" "red5_stream_manager_server" {
     R5AS_PROXY_PASS=${var.stream_manager_proxy_password}
     R5AS_SPATIAL_USER=${var.stream_manager_spatial_user}
     R5AS_SPATIAL_PASS=${var.stream_manager_spatial_password}
+    R5AS_INTENT_USER=${var.stream_manager_intent_user}
+    R5AS_INTENT_PASS=${local.stream_manager_intent_password}
     R5AS_CONFERENCE_SECRET=${random_id.r5as_conference_secret[0].hex}
     R5AS_NODE_API_ACCESS_TOKEN=${var.red5pro_api_key}
     CONTAINER_REGISTRY=${var.stream_manager_container_registry}
@@ -402,10 +474,12 @@ resource "null_resource" "red5pro_sm_configuration" {
       AS_ADMIN_UI_MAIN_REGION=${var.google_region}
       AS_ADMIN_UI_NODE_IMAGE_NAME=${local.red5pro_node_image_name}
       AS_ADMIN_UI_GCP_VPC=${local.vpc_network_name}
+      ${local.stream_proxy_enable ? "STREAM_PROXY_VERSION=${var.stream_proxy_version}\nR5SP_STREAM_MANAGER_URL=${local.stream_proxy_sm_url}" : ""}
       EOM
       EOT
       ,
       "export SM_SSL='${local.stream_manager_ssl}'",
+      "export STREAM_PROXY_ENABLE='${local.stream_proxy_enable}'",
       "export SM_STANDALONE='${local.stream_manager_standalone}'",
       "export KAFKA_REPLICAS='${local.kafka_on_sm_replicas}'",
       "export CONTAINER_REGISTRY='${var.stream_manager_container_registry}'",
@@ -573,6 +647,10 @@ resource "google_compute_instance" "red5pro_kafka_standalone" {
     scopes = ["cloud-platform"]
   }
   tags = local.kafka_standalone_firewall_tags
+
+  lifecycle {
+    ignore_changes = [boot_disk[0].initialize_params[0].image]
+  }
 }
 
 resource "null_resource" "red5pro_kafka_standalone_configuration" {
@@ -640,6 +718,134 @@ resource "google_compute_firewall" "kafka_standalone_ssh_firewall" {
   source_ranges = var.firewall_ssh_allowed_ip_ranges
   project       = local.google_cloud_project
   target_tags   = local.kafka_standalone_firewall_tags
+}
+
+################################################################################
+# RabbitMQ servers (Google Cloud Instances)
+################################################################################
+resource "random_password" "rabbitmq_password" {
+  count   = local.rabbitmq_create && var.rabbitmq_password == "" ? 1 : 0
+  length  = 32
+  special = false
+}
+
+resource "random_password" "rabbitmq_erlang_cookie" {
+  count   = local.rabbitmq_create ? 1 : 0
+  length  = 32
+  special = false
+  upper   = true
+  lower   = false
+  numeric = false
+}
+
+resource "google_compute_instance" "red5pro_rabbitmq" {
+  count        = local.rabbitmq_node_count
+  name         = "${var.name}-rabbitmq-${count.index + 1}"
+  machine_type = var.rabbitmq_instance_type
+  zone         = element(data.google_compute_zones.available_zone.names, count.index)
+  project      = local.google_cloud_project
+
+  boot_disk {
+    initialize_params {
+      image = local.ubuntu_image
+      type  = var.rabbitmq_disk_type
+      size  = var.rabbitmq_disk_size
+    }
+  }
+
+  network_interface {
+    network = local.vpc_network_name
+    access_config {
+    }
+  }
+
+  metadata = {
+    ssh-keys = "ubuntu:${local.ssh_public_key}"
+  }
+
+  service_account {
+    scopes = ["cloud-platform"]
+  }
+  tags = local.rabbitmq_firewall_tags
+
+  lifecycle {
+    ignore_changes = [boot_disk[0].initialize_params[0].image]
+  }
+}
+
+resource "null_resource" "red5pro_rabbitmq" {
+  count = local.rabbitmq_node_count
+
+  connection {
+    host        = google_compute_instance.red5pro_rabbitmq[count.index].network_interface.0.access_config.0.nat_ip
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = local.ssh_private_key
+  }
+
+  provisioner "file" {
+    source      = "${abspath(path.module)}/red5pro-installer"
+    destination = "/home/ubuntu"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo iptables -F",
+      "sudo cloud-init status --wait",
+      "export RMQ_IMAGE='${var.rabbitmq_image}'",
+      "export RMQ_USER='${var.rabbitmq_user}'",
+      "export RMQ_PASSWORD='${nonsensitive(local.rabbitmq_password)}'",
+      "export RMQ_ERLANG_COOKIE='${nonsensitive(random_password.rabbitmq_erlang_cookie[0].result)}'",
+      "export RMQ_NODE_INDEX='${count.index + 1}'",
+      "export RMQ_NODE_IPS='${join(",", google_compute_instance.red5pro_rabbitmq[*].network_interface.0.network_ip)}'",
+      "cd /home/ubuntu/red5pro-installer/",
+      "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
+      "sudo -E /home/ubuntu/red5pro-installer/r5p_rabbitmq_install.sh",
+    ]
+  }
+  depends_on = [google_compute_instance.red5pro_rabbitmq, google_compute_firewall.rabbitmq_ssh_firewall, google_compute_firewall.rabbitmq_cluster_firewall]
+}
+
+# Create security group for RabbitMQ AMQP from the VPC
+resource "google_compute_firewall" "rabbitmq_amqp_firewall" {
+  count   = local.rabbitmq_create ? 1 : 0
+  name    = "${var.name}-rabbitmq-amqp-firewall"
+  network = local.vpc_network_name
+  allow {
+    protocol = "tcp"
+    ports    = ["5672"]
+  }
+  source_ranges = local.rabbitmq_amqp_source_ranges
+  project       = local.google_cloud_project
+  target_tags   = local.rabbitmq_firewall_tags
+}
+
+# Create security group for RabbitMQ cluster ports between RabbitMQ instances
+resource "google_compute_firewall" "rabbitmq_cluster_firewall" {
+  count   = local.rabbitmq_node_count > 1 ? 1 : 0
+  name    = "${var.name}-rabbitmq-cluster-firewall"
+  network = local.vpc_network_name
+  allow {
+    protocol = "tcp"
+    ports    = ["4369", "25672", "35672-35682"]
+  }
+  source_tags = local.rabbitmq_firewall_tags
+  project     = local.google_cloud_project
+  target_tags = local.rabbitmq_firewall_tags
+}
+
+# Create security group for RabbitMQ SSH
+resource "google_compute_firewall" "rabbitmq_ssh_firewall" {
+  count   = local.rabbitmq_create ? 1 : 0
+  name    = "${var.name}-rabbitmq-ssh-firewall"
+  network = local.vpc_network_name
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+  source_ranges = var.firewall_ssh_allowed_ip_ranges
+  project       = local.google_cloud_project
+  target_tags   = local.rabbitmq_firewall_tags
 }
 
 ################################################################################
@@ -1090,7 +1296,7 @@ resource "null_resource" "node_group" {
     command = "bash ${abspath(path.module)}/red5pro-installer/r5p_create_node_group.sh"
     environment = {
       SM_IP                                          = local.stream_manager_ip
-      NODE_GROUP_NAME                                = substr(var.name, 0, 16)
+      NODE_GROUP_NAME                                = local.node_group_name
       R5AS_AUTH_USER                                 = var.stream_manager_auth_user
       R5AS_AUTH_PASS                                 = var.stream_manager_auth_password
       NODE_GROUP_CLOUD_PLATFORM                      = "GCP"
